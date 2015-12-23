@@ -17,7 +17,7 @@ public class Server implements Runnable{
 		try{
 			ServerSocketChannel listenSock = ServerSocketChannel.open();
 			listenSock.configureBlocking(false);
-		    listenSock.socket().bind(new java.net.InetSocketAddress(6000));
+		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
 		    
@@ -31,7 +31,7 @@ public class Server implements Runnable{
 			    }
 		        OFMessageAsyncStream stream = new OFMessageAsyncStream(sock, factory);
 		        
-		        vSwitch sw = new vSwitch("Switch_" + sock.getRemoteAddress(),stream,sock);
+		        OVSwitch sw = new OVSwitch("Switch_" + sock.getRemoteAddress(),stream,sock);
 		        sw.start();
 			}
 		}
