@@ -15,7 +15,13 @@ import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.util.U16;
 
-
+/**
+ * 
+ * @author Nicholas Landriault
+ *
+ * Packet Handler Class
+ *
+ */
 public class PacketHandler implements Runnable{
 	private Map<Integer, Short> macTable;
 	private String threadName;
