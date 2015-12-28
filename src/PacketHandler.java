@@ -3,6 +3,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Logger;
+
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -23,6 +25,8 @@ import org.openflow.util.U16;
  *
  */
 public class PacketHandler implements Runnable{
+	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
+	
 	private Map<Integer, Short> macTable;
 	private String threadName;
 	private ConcurrentLinkedQueue<OFMessage> q = new ConcurrentLinkedQueue<OFMessage>();
@@ -180,11 +184,11 @@ public class PacketHandler implements Runnable{
 	
 	public void stop(){
 		t.interrupt();
-		System.out.println("Stopping " +  threadName);
+		LOGGER.info("Stopping " +  threadName);
 	}
 	
 	public void start (){
-      System.out.println("Starting " +  threadName);
+      LOGGER.info("Starting " +  threadName);
       if (t == null){
          t = new Thread (this, threadName);
          t.start ();

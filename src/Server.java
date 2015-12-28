@@ -1,10 +1,19 @@
+import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.factory.BasicFactory;
 
+
 public class Server implements Runnable{
+	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
+
+	
 	private Thread t;
 	private String threadName;
 	
@@ -14,12 +23,27 @@ public class Server implements Runnable{
 	
 	@Override
 	public void run(){
+		LOGGER.setLevel(Level.FINEST);
+		
+		try {
+			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
+			SimpleFormatter sf = new SimpleFormatter();
+			fh.setFormatter(sf);
+			LOGGER.addHandler(fh);
+		} catch (SecurityException e1) {
+			e1.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
 		try{
 			ServerSocketChannel listenSock = ServerSocketChannel.open();
 			listenSock.configureBlocking(false);
 		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
+		    SwitchHandler swhl = new SwitchHandler("Main_SwitchHandler");
+		    swhl.start();
 		    
 			while(true){
 			    
@@ -29,10 +53,9 @@ public class Server implements Runnable{
 			    	Thread.sleep(0,1);
 			    	sock = listenSock.accept();
 			    }
-		        OFMessageAsyncStream stream = new OFMessageAsyncStream(sock, factory);
+		        new SwitchSetup("SetupSwitch_" + sock.getRemoteAddress(),sock, new OFMessageAsyncStream(sock, factory), swhl);
 		        
-		        OVSwitch sw = new OVSwitch("Switch_" + sock.getRemoteAddress(),stream,sock);
-		        sw.start();
+		        
 			}
 		}
 		catch(Exception e){
@@ -41,12 +64,16 @@ public class Server implements Runnable{
 	}
 	
 	
+	
+	
+	
+	
 	public void stop(){
 		t.interrupt();
 	}
 	
 	public void start (){
-      System.out.println("Starting " +  threadName);
+      LOGGER.info("Starting " +  threadName);
       if (t == null){
          t = new Thread (this, threadName);
          t.start();
