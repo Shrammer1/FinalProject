@@ -1,11 +1,14 @@
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFMessage;
 
 
 public class StreamHandler implements Runnable{
+	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
+	
 	private String threadName;
 	private OFMessageAsyncStream stream;
 	private Thread t;
@@ -55,11 +58,11 @@ public class StreamHandler implements Runnable{
 
 	public void stop(){
 		t.interrupt();
-		System.out.println("Stopping " +  threadName);
+		LOGGER.info("Stopping " +  threadName);
 	}
 	
 	public void start (){
-      System.out.println("Starting " +  threadName);
+      LOGGER.info("Starting " +  threadName);
       if (t == null){
          t = new Thread (this, threadName);
          t.start ();

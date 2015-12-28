@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFMessage;
@@ -13,6 +14,8 @@ import org.openflow.util.LRULinkedHashMap;
 
 
 public class OVSwitch implements Runnable{
+	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
+	
 	private Map<Integer, Short> macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 	private String threadName;
 	private OFMessageAsyncStream stream;
@@ -23,13 +26,20 @@ public class OVSwitch implements Runnable{
 	private StreamHandler sthl;
 	private SocketChannel sock;
 	private Thread t;
+	public long switchID;
 	
 	
-	public OVSwitch(String name, OFMessageAsyncStream strm, SocketChannel s) {
+	public OVSwitch(String name, long switchID, OFMessageAsyncStream strm, SocketChannel s) {
 		threadName = name;
 		stream = strm;
 		sock = s;
+		this.switchID = switchID;
 	}	
+	
+	public boolean isAlive(){
+		if(t.isAlive()) return true;
+		return false;
+	}
 	
 	
 	private void abort(){
@@ -38,12 +48,30 @@ public class OVSwitch implements Runnable{
 		pkhl=null;
 		sthl.stop();
 		sthl=null;
+		t=null;
 		try {
 			sock.close();
 		} catch (IOException e) {
 
 		}
 	}
+	
+	public void restart(SocketChannel sock, OFMessageAsyncStream stream){
+		try{
+			if(t.isAlive()) abort();
+		}catch(NullPointerException e){
+			//perfectly normal, just means that the thread is already stopped
+		}
+		macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+		this.stream = stream;
+		this.sock = sock;
+		LOGGER.info("RE-Starting " +  threadName + "\t" + "Switch ID: " + switchID);
+	      if (t == null){
+	         t = new Thread (this, threadName);
+	         t.start ();
+	      }
+	}
+	
 	
 	@Override
 	public void run(){
@@ -52,8 +80,7 @@ public class OVSwitch implements Runnable{
 		sthl.start();
 		pkhl.start();
 		
-		l.add(factory.getMessage(OFType.HELLO));
-        l.add(factory.getMessage(OFType.FEATURES_REQUEST));
+		
         try {
         	long lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         	sthl.sendMsg(l);
@@ -111,23 +138,18 @@ public class OVSwitch implements Runnable{
 			e.printStackTrace();
 			return;
 		}
-        
-        pkhl.stop();
-        sthl.stop();
-        this.stop();
-        
-        
+        this.abort();
 	}
 	
 	
 	public void stop(){
 		t.interrupt();
-		System.out.println("Stopping " +  threadName);
+		LOGGER.info("Stopping " +  threadName);
 		pkhl.stop();
 	}
 	
 	public void start (){
-      System.out.println("Starting " +  threadName);
+      LOGGER.info("Starting " +  threadName + "\t" + "Switch ID: " + switchID);
       if (t == null){
          t = new Thread (this, threadName);
          t.start ();
