@@ -52,8 +52,43 @@ public class PacketHandler implements Runnable{
 		}
 	}
 	
+	/**
+	 * Sends a flow mod that drops all packets 
+	 */
+	public void dropAll(){
+	
+		OFMatch match = new OFMatch();
+		OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
+        fm.setCommand((short) 0);
+        fm.setCookie(0);
+        fm.setHardTimeout((short) 0);
+        
+        match.setInputPort(OFPort.OFPP_NONE.getValue());
+        	                
+        fm.setMatch(match);
+        fm.setOutPort((short) OFPort.OFPP_NONE.getValue());
+        fm.setPriority((short) 0);
+        OFActionOutput action = new OFActionOutput();
+        action.setMaxLength((short) 0);
+        List<OFAction> actions = new ArrayList<OFAction>();
+        actions.add(action);
+        fm.setActions(actions);
+        fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
+        sthl.sendMsg(fm);
+			
+	}
+	
+	
+	
+	
+	
+	
+	
 	@Override
 	public void run(){
+		
+		
+		
 	    OFMessage msg = null;
 	    while(t.isInterrupted()==false){
 	    	

@@ -1,6 +1,9 @@
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -12,29 +15,19 @@ import org.openflow.protocol.factory.BasicFactory;
 
 public class Server implements Runnable{
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
-
-	
+	private Registry reg;
+	private int port;
 	private Thread t;
 	private String threadName;
 	
-	public Server(String t){
+	public Server(String t, int prt){
 		this.threadName = t;
+		this.port = prt;
 	}
 	
 	@Override
 	public void run(){
-		LOGGER.setLevel(Level.FINEST);
 		
-		try {
-			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
-			SimpleFormatter sf = new SimpleFormatter();
-			fh.setFormatter(sf);
-			LOGGER.addHandler(fh);
-		} catch (SecurityException e1) {
-			e1.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 		
 		try{
 			ServerSocketChannel listenSock = ServerSocketChannel.open();
@@ -42,7 +35,7 @@ public class Server implements Runnable{
 		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
-		    SwitchHandler swhl = new SwitchHandler("Main_SwitchHandler");
+		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg);
 		    swhl.start();
 		    
 			while(true){
@@ -53,7 +46,7 @@ public class Server implements Runnable{
 			    	Thread.sleep(0,1);
 			    	sock = listenSock.accept();
 			    }
-		        new SwitchSetup("SetupSwitch_" + sock.getRemoteAddress(),sock, new OFMessageAsyncStream(sock, factory), swhl);
+		        swhl.addSwitch(sock,new OFMessageAsyncStream(sock, factory));
 		        
 		        
 			}
@@ -73,17 +66,38 @@ public class Server implements Runnable{
 	}
 	
 	public void start (){
-      LOGGER.info("Starting " +  threadName);
-      if (t == null){
-         t = new Thread (this, threadName);
-         t.start();
-      }
+		LOGGER.setLevel(Level.FINEST);
+		try {
+			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
+			SimpleFormatter sf = new SimpleFormatter();
+			fh.setFormatter(sf);
+			LOGGER.addHandler(fh);
+		} catch (SecurityException e1) {
+			e1.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		LOGGER.info("Starting " +  threadName);
+		try {
+			reg = LocateRegistry.createRegistry(port);
+			LOGGER.info("RMI Registry created on port: " + port);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		if (t == null){
+			t = new Thread (this, threadName);
+			t.start();
+		}
    }
 	
 	
 	
 	public static void main(String args[]){
-		Server srv = new Server("Server");
+		if(!(args.length==1)){
+			System.err.println("Usage: THISFILENAME <Server_Name>");
+			System.exit(1);
+		}
+		Server srv = new Server(args[0], 1099);
 		srv.start();
 		
 		

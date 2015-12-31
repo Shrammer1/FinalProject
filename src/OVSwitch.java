@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
+import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
@@ -26,14 +27,21 @@ public class OVSwitch implements Runnable{
 	private StreamHandler sthl;
 	private SocketChannel sock;
 	private Thread t;
+	private OFFeaturesReply featureReply;
 	public long switchID;
+	public String nickname;
+	
+	public OFFeaturesReply getFeatures(){
+		return featureReply;
+	}
 	
 	
-	public OVSwitch(String name, long switchID, OFMessageAsyncStream strm, SocketChannel s) {
+	public OVSwitch(String name, long switchID, OFMessageAsyncStream strm, SocketChannel s, OFFeaturesReply fr) {
 		threadName = name;
 		stream = strm;
 		sock = s;
 		this.switchID = switchID;
+		this.featureReply = fr;
 	}	
 	
 	public boolean isAlive(){
@@ -56,13 +64,14 @@ public class OVSwitch implements Runnable{
 		}
 	}
 	
-	public void restart(SocketChannel sock, OFMessageAsyncStream stream){
+	public void restart(SocketChannel sock, OFMessageAsyncStream stream, OFFeaturesReply fr){
 		try{
 			if(t.isAlive()) abort();
 		}catch(NullPointerException e){
 			//perfectly normal, just means that the thread is already stopped
 		}
 		macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+		this.featureReply = fr;
 		this.stream = stream;
 		this.sock = sock;
 		LOGGER.info("RE-Starting " +  threadName + "\t" + "Switch ID: " + switchID);
@@ -79,7 +88,6 @@ public class OVSwitch implements Runnable{
 		pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl); 
 		sthl.start();
 		pkhl.start();
-		
 		
         try {
         	long lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
