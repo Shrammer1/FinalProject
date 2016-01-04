@@ -52,7 +52,7 @@ public class Server implements Runnable{
 			}
 		}
 		catch(Exception e){
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}
 	}
 	
@@ -75,14 +75,14 @@ public class Server implements Runnable{
 		} catch (SecurityException e1) {
 			e1.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}
 		LOGGER.info("Starting " +  threadName);
 		try {
 			reg = LocateRegistry.createRegistry(port);
 			LOGGER.info("RMI Registry created on port: " + port);
 		} catch (RemoteException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}
 		if (t == null){
 			t = new Thread (this, threadName);

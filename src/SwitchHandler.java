@@ -7,11 +7,12 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
-
+import java.util.logging.Level;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
+
 
 
 /**
@@ -51,7 +52,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 		String res = "";
 		synchronized (switches) {
 			for(int i = 0; i<switches.size();i++){
-				res = res + switches.get(i).nickname + " : " + switches.get(i).switchID + System.lineSeparator();
+				res = res + switches.get(i).getSwitchName() + " : " + switches.get(i).getSwitchID() + System.lineSeparator();
 			}
 			switches.notifyAll();
 		}
@@ -63,7 +64,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 			try {
 				new SwitchSetup(threadName + "_SetupSwitch_" + sock.getRemoteAddress(),threadName,sock, stream, this);
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, e.toString());
 			}
 		}
 	}
@@ -74,13 +75,18 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 		synchronized (switches) {
 			switches.add(sw);
 			switches.notifyAll();
+			try {
+				reg.rebind(sw.getSwitchName(), sw);
+			} catch (RemoteException e) {
+				LOGGER.log(Level.SEVERE, e.toString());
+			}
 		}
 	}
 	public synchronized OVSwitch getSwitch(long switchID){
 		OVSwitch sw = null;
 		synchronized (switches) {
 			for(int i = 0; i<switches.size();i++){
-				if((sw = switches.get(i)).switchID == switchID) return sw;
+				if((sw = switches.get(i)).getSwitchID() == switchID) return sw;
 			}
 			switches.notifyAll();
 		}
@@ -95,7 +101,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 			try {
 				Thread.sleep(1, 1);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, e.toString());
 			}
 		}
         this.abort();
@@ -112,9 +118,9 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
       try {
 		reg.rebind(regName, this);
 	} catch (AccessException e) {
-		e.printStackTrace();
+		LOGGER.log(Level.SEVERE, e.toString());
 	} catch (RemoteException e) {
-		e.printStackTrace();
+		LOGGER.log(Level.SEVERE, e.toString());
 	}
       if (t == null){
          t = new Thread (this, threadName);
@@ -163,7 +169,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 				try {
 					Thread.sleep(0,1);
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					LOGGER.log(Level.SEVERE, e.toString());
 				}
 	        	msgs.addAll(stream.read());
 	        	for(int i = 0; i<msgs.size();i++){
@@ -196,7 +202,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, OVSw
 		        }
 		        
 			} catch (IOException e) {
-				e.printStackTrace();
+				LOGGER.log(Level.SEVERE, e.toString());
 			}
 	        sw.start();
 	        swhl.addSwitch(sw);

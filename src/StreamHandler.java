@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
@@ -26,7 +27,7 @@ public class StreamHandler implements Runnable{
 				stream.notifyAll();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}	
 	}
 	
@@ -38,7 +39,7 @@ public class StreamHandler implements Runnable{
 			}
 				
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}	
 	}
 	
@@ -52,7 +53,7 @@ public class StreamHandler implements Runnable{
 				}
 		    }
 		} catch (IOException e) {
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}
 	}
 

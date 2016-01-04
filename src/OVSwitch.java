@@ -1,9 +1,11 @@
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
+import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
@@ -14,7 +16,7 @@ import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.util.LRULinkedHashMap;
 
 
-public class OVSwitch implements Runnable{
+public class OVSwitch implements Runnable, Remote{
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
 	private Map<Integer, Short> macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
@@ -28,11 +30,31 @@ public class OVSwitch implements Runnable{
 	private SocketChannel sock;
 	private Thread t;
 	private OFFeaturesReply featureReply;
-	public long switchID;
-	public String nickname;
+	private long switchID;
+	private String nickname = "";
 	
 	public OFFeaturesReply getFeatures(){
 		return featureReply;
+	}
+	
+	public String getSwitchName(){
+		return nickname + "_" + switchID;
+	}
+	
+	public long getSwitchID(){
+		return switchID;
+	}
+	
+	public String getSwitchNickName(){
+		return nickname;
+	}
+	
+	public void setSwitchNickName(String s){
+		nickname = s;
+	}
+	
+	public void setSwitchID(long l){
+		switchID = l;
 	}
 	
 	
@@ -143,7 +165,7 @@ public class OVSwitch implements Runnable{
         	
 		} catch (Exception e) {
 			abort();
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 			return;
 		}
         this.abort();
