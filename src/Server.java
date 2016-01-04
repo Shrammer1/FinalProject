@@ -4,10 +4,13 @@ import java.nio.channels.SocketChannel;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.FileHandler;
+import java.util.logging.Formatter;
 import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.factory.BasicFactory;
@@ -69,8 +72,11 @@ public class Server implements Runnable{
 		LOGGER.setLevel(Level.FINEST);
 		try {
 			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
-			SimpleFormatter sf = new SimpleFormatter();
-			fh.setFormatter(sf);
+			//SimpleFormatter sf = new SimpleFormatter();
+			//fh.setFormatter(sf);
+			
+			fh.setFormatter(new LogFormatter());
+			
 			LOGGER.addHandler(fh);
 		} catch (SecurityException e1) {
 			e1.printStackTrace();
@@ -102,7 +108,26 @@ public class Server implements Runnable{
 		
 		
 	}
-	    
+	
+	
+	private class LogFormatter extends Formatter
+	{
+	    SimpleDateFormat dateFormatter = new SimpleDateFormat ("MM/dd/yy '-' HH:mm:ss a");
+
+	    public String format(LogRecord record)
+	    {
+	        StringBuffer buffer = new StringBuffer();
+	        String timeString = dateFormatter.format(new Date(record.getMillis()));
+	        buffer.append("Level: " + record.getLevel().toString() + " - ");
+	        buffer.append("Time: " + timeString  + " | ");
+	        buffer.append(record.getMessage() + "\n");
+	        return buffer.toString();
+	    }
+
+	}    
+	
+	
+	
 }
 	
 	/*

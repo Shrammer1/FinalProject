@@ -46,13 +46,16 @@ public class StreamHandler implements Runnable{
 	@Override
 	public void run(){
 		try {
-		    while(!(t.isInterrupted())){	
+		    while(!(t.isInterrupted())){
+		    	Thread.sleep(0, 1);
 		    	synchronized (stream) {
 		    		if(stream.needsFlush()) stream.flush();
 		    		stream.notifyAll();
 				}
 		    }
 		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.toString());
+		} catch (InterruptedException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		}
 	}

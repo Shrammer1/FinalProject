@@ -87,13 +87,10 @@ public class PacketHandler implements Runnable{
 	@Override
 	public void run(){
 		
-		
-		
 	    OFMessage msg = null;
 	    while(t.isInterrupted()==false){
 	    	
 	    	msg = q.poll();
-
 	    	if(msg==null){
 	    		try {
 					synchronized (t) {

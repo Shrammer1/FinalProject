@@ -1,6 +1,5 @@
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.rmi.Remote;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +15,7 @@ import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.util.LRULinkedHashMap;
 
 
-public class OVSwitch implements Runnable, Remote{
+public class OVSwitch implements Runnable, OVSwitchAPI{
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
 	private Map<Integer, Short> macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
@@ -30,18 +29,41 @@ public class OVSwitch implements Runnable, Remote{
 	private SocketChannel sock;
 	private Thread t;
 	private OFFeaturesReply featureReply;
-	private long switchID;
+	private String switchID;
 	private String nickname = "";
+	
+	private int switchTimeout;
+	
+	public long lastHeard;
+	
+	//****************************************************************************
+	//Remote available methods here
+	
+	public int getSwitchTimeout() {
+		return switchTimeout;
+	}
+	public void setSwitchTimeout(int switchTimeout) {
+		this.switchTimeout = switchTimeout;
+	}
+
+	public String getSwitchName(){
+		return nickname + "_" + switchID;
+	}
+	
+	
+	
+	
+	
+	
+	
+	//****************************************************************************
+	
 	
 	public OFFeaturesReply getFeatures(){
 		return featureReply;
 	}
 	
-	public String getSwitchName(){
-		return nickname + "_" + switchID;
-	}
-	
-	public long getSwitchID(){
+	public String getSwitchID(){
 		return switchID;
 	}
 	
@@ -53,17 +75,18 @@ public class OVSwitch implements Runnable, Remote{
 		nickname = s;
 	}
 	
-	public void setSwitchID(long l){
+	public void setSwitchID(String l){
 		switchID = l;
 	}
 	
 	
-	public OVSwitch(String name, long switchID, OFMessageAsyncStream strm, SocketChannel s, OFFeaturesReply fr) {
+	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, SocketChannel s, OFFeaturesReply fr, int swtime) {
 		threadName = name;
 		stream = strm;
 		sock = s;
 		this.switchID = switchID;
 		this.featureReply = fr;
+		this.switchTimeout = swtime;
 	}	
 	
 	public boolean isAlive(){
@@ -112,7 +135,8 @@ public class OVSwitch implements Runnable, Remote{
 		pkhl.start();
 		
         try {
-        	long lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        	
         	sthl.sendMsg(l);
         	l.clear();
         	
