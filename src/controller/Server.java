@@ -1,3 +1,4 @@
+package controller;
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -22,10 +23,17 @@ public class Server implements Runnable{
 	private int port;
 	private Thread t;
 	private String threadName;
+	private boolean l2_learning;
 	
 	public Server(String t, int prt){
 		this.threadName = t;
 		this.port = prt;
+		this.l2_learning=false;
+	}
+	public Server(String t, int prt,boolean l2_learning){
+		this.threadName = t;
+		this.port = prt;
+		this.l2_learning=l2_learning;
 	}
 	
 	@Override
@@ -38,7 +46,7 @@ public class Server implements Runnable{
 		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
-		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg);
+		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg,l2_learning);
 		    swhl.start();
 		    
 			while(true){
@@ -96,14 +104,28 @@ public class Server implements Runnable{
 		}
    }
 	
-	
+	private static String printUsage(){
+		return "Usage: THISFILENAME <Server_Name>\nOptions:\n\n-l2\tBuilt in standard layer 2 learning";
+	}
 	
 	public static void main(String args[]){
-		if(!(args.length==1)){
-			System.err.println("Usage: THISFILENAME <Server_Name>");
+		boolean l2_learning=false;
+		//parse cli arguments
+		if(args.length<1){
+			System.err.println(printUsage());
 			System.exit(1);
 		}
-		Server srv = new Server(args[0], 1099);
+		//this is going to have to be changed before the final version to incorperate all options
+		if(args.length==2){
+			if(args[1].equals("-l2")){
+				l2_learning = true;
+			}
+			else{
+				System.err.println(printUsage());
+				System.exit(1);
+			}
+		}
+		Server srv = new Server(args[0], 1099,l2_learning);
 		srv.start();
 		
 		

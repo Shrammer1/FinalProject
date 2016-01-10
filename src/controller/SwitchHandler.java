@@ -1,3 +1,4 @@
+package controller;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.rmi.AccessException;
@@ -37,7 +38,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
 	private Registry reg;
 	private String regName;
-	
+	private boolean l2_learning = false;
 	
 	
 	//****************************************************************************
@@ -68,10 +69,11 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	
 	//****************************************************************************
 	
-	public SwitchHandler(String name, String regName, Registry reg) throws RemoteException{
+	public SwitchHandler(String name, String regName, Registry reg, boolean l2_learning) throws RemoteException{
 		threadName = name;
 		this.reg = reg;
 		this.regName = regName;
+		this.l2_learning = l2_learning;
 	}	
 	
 	
@@ -215,7 +217,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		        OFFeaturesReply fr = getFeaturesReply();
 		        sw = swhl.getSwitch(Long.toHexString(fr.getDatapathId()));
 		        if(sw==null){
-		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length()) + Long.toHexString(fr.getDatapathId()),stream,sock,fr,30);
+		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length()) + Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,swhl.l2_learning);
 		        }
 		        else{
 		        	sw.restart(sock,stream,fr);
