@@ -1,6 +1,8 @@
+package controller;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -18,19 +20,24 @@ import org.openflow.util.LRULinkedHashMap;
 public class OVSwitch implements Runnable, OVSwitchAPI{
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
-	private Map<Integer, Short> macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+	//Only used if l2_learning is true
+	private Map<Integer, Short> macTable;
+	private PacketHandler pkhl;
+	
 	private String threadName;
 	private OFMessageAsyncStream stream;
 	private BasicFactory factory = new BasicFactory();
 	private List<OFMessage> l = new ArrayList<OFMessage>();
 	private List<OFMessage> msgIn = new ArrayList<OFMessage>();
-	private PacketHandler pkhl;
 	private StreamHandler sthl;
 	private SocketChannel sock;
 	private Thread t;
 	private OFFeaturesReply featureReply;
 	private String switchID;
 	private String nickname = "";
+	private boolean l2_learning = false;
+	private Map<String,Registration> registrations = new HashMap<String,Registration>();
+	
 	
 	private int switchTimeout;
 	
@@ -50,8 +57,46 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		return nickname + "_" + switchID;
 	}
 	
+	public boolean register(String id, OFType type){
+		if(registrations.containsKey(id)){
+			return registrations.get(id).register(type);
+		}
+		else{
+			registrations.putIfAbsent(id, new Registration(id,type));
+			return true;
+		}
+	}
 	
+	public boolean register(String id, ArrayList<OFType> types){
+		if(registrations.containsKey(id)){
+			return registrations.get(id).register(types);
+		}
+		else{
+			registrations.putIfAbsent(id, new Registration(id,types));
+			return true;
+		}
+	}
 	
+	public boolean unregister(String id, OFType type){
+		if(registrations.containsKey(id)){
+			return registrations.get(id).unregister(type);
+		}
+		else{
+			return false;
+		}
+	}
+	public boolean unregister(String id, ArrayList<OFType> types){
+		if(registrations.containsKey(id)){
+			return registrations.get(id).unregister(types);
+		}
+		else{
+			return false;
+		}
+	}
+	
+	public boolean isAlive(){
+		return t.isAlive();
+	}
 	
 	
 	
@@ -80,25 +125,23 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	}
 	
 	
-	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, SocketChannel s, OFFeaturesReply fr, int swtime) {
+	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, SocketChannel s, OFFeaturesReply fr, int swtime, boolean l2_learning) {
 		threadName = name;
 		stream = strm;
 		sock = s;
 		this.switchID = switchID;
 		this.featureReply = fr;
 		this.switchTimeout = swtime;
+		this.l2_learning = l2_learning;
+		if(l2_learning) macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 	}	
-	
-	public boolean isAlive(){
-		if(t.isAlive()) return true;
-		return false;
-	}
-	
 	
 	private void abort(){
 		stop();
-		pkhl.stop();
-		pkhl=null;
+		if(l2_learning){
+			pkhl.stop();
+			pkhl=null;
+		}
 		sthl.stop();
 		sthl=null;
 		t=null;
@@ -115,7 +158,7 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		}catch(NullPointerException e){
 			//perfectly normal, just means that the thread is already stopped
 		}
-		macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+		if(l2_learning) macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 		this.featureReply = fr;
 		this.stream = stream;
 		this.sock = sock;
@@ -130,9 +173,12 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	@Override
 	public void run(){
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
-		pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl); 
+		
+		if(l2_learning){
+			pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl); 
+			pkhl.start();
+		}
 		sthl.start();
-		pkhl.start();
 		
         try {
         	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
@@ -179,8 +225,14 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	    				waitForReply = false;
     		    	}
 	    			else {
-	    				pkhl.addPacket(msg);
-	    				pkhl.wakeUp();
+	    				if(l2_learning){
+	    					pkhl.addPacket(msg);
+	    					pkhl.wakeUp();
+	    				}
+	    				else{
+	    					
+	    				}
+	    				
 	    			}
     	        }
             }
@@ -199,7 +251,7 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
-		pkhl.stop();
+		if(l2_learning) pkhl.stop();
 	}
 	
 	public void start (){

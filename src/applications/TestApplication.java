@@ -1,6 +1,9 @@
+package applications;
 import java.net.MalformedURLException;
 import java.rmi.*;
 import java.util.ArrayList;
+
+import controller.SwitchHandlerAPI;
 
 
 public class TestApplication {
