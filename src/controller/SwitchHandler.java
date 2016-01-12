@@ -15,22 +15,33 @@ import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 
-
-
 /**
  * 
- * @author Nick
+ * @author Nicholas Landriault
  *
- *This class is to be used for handling all the switches run on the controller. It will track all the switches and will be able to return the instance of a switch that has a requested switchID
+ *This class is to be used for handling all the switches run on the controller. 
+ *It will track all the switches and will be able to return the instance of a 
+ *switch that has a requested switchID
  *
  *
  */
 public class SwitchHandler extends UnicastRemoteObject implements Runnable, SwitchHandlerAPI {
-	/**
-	 * 
+	
+	/**************************************************
+	 * PRIVATE VARIABLES
+	 **************************************************/
+	/*final=its value cannot be changed once initialized
+	 * static=variable shared among all the instances of this class as it
+	 * belongs to the type and not to the actual objects themselves.
 	 */
+	
 	private static final long serialVersionUID = 3480557320840477486L;
 
+	/*
+	 * LOGGER variable shared among all the instances of this class
+	 * Built-in log levels available : SEVERE, WARNING, INFO, CONFIG, FINE, 
+	 * FINER, FINEST
+	 */	
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");	
 	
 	private String threadName;
