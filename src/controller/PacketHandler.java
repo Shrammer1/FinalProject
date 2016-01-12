@@ -258,17 +258,22 @@ public class PacketHandler implements Runnable{
         sthl.sendMsg(fm);
 	}
 	
-			
+
 	@Override
 	public void run(){
 		
 	    OFMessage msg = null;
 	    while(t.isInterrupted()==false){
 	    	
+	    	/*
+	    	 * Retrieves and removes the head of this queue, or returns null 
+	    	 * if this queue is empty
+	    	 */
 	    	msg = q.poll();
 	    	if(msg==null){
 	    		try {
 					synchronized (t) {
+						//Maximum time to wait in milliseconds
 						t.wait(10000);
 					}
 				} catch (InterruptedException e) {
@@ -280,16 +285,25 @@ public class PacketHandler implements Runnable{
 			    	handle_PACKETIN(msg);
 	    		}    		
     		}
-		    l.clear();
+	    	
+		    /*
+		     * Clearing the list of OFMessages
+		     */
+	    	l.clear();
 	    }
 	}	
 	
-	
+	/*
+	 * Method to interrupt a PacketHandler Thread
+	 */
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
 	}
 	
+	/*
+	 * Method to allocate/instantiate a new PacketHandler Thread
+	 */
 	public void start (){
       LOGGER.info("Starting " +  threadName);
       if (t == null){

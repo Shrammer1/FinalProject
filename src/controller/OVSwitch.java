@@ -197,12 +197,30 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	
 	@Override
 	public void run(){
+		/*
+		 * Creating/Instantiating a new StreamHandler Object
+		 */
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
 		
+		/*
+		 * Evaluating if Layer 2 functionality should be used and sending its
+		 * corresponding arguments.
+		 */
 		if(l2_learning){
-			pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl); 
+			
+			/*
+			 * Creating/Instantiating a new PacketHandler Object
+			 */
+			pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl);
+			
+			/*
+			 * Starting a PacketHandler Thread
+			 */
 			pkhl.start();
 		}
+		/*
+		 * Starting a StreamHandler Thread
+		 */
 		sthl.start();
 		
         try {
@@ -286,6 +304,9 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
       }
    }
 	
+	/*
+	 * Method for hot operation abort
+	 */
 	private void abort(){
 		stop();
 		if(l2_learning){
@@ -302,13 +323,21 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		}
 	}
 	
-	public void restart(SocketChannel sock, OFMessageAsyncStream stream, OFFeaturesReply fr){
-		try{
-			if(t.isAlive()) abort();
-		}catch(NullPointerException e){
-			//perfectly normal, just means that the thread is already stopped
+	/*
+	 * Method for hot restart
+	 */
+	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 
+			OFFeaturesReply fr)
+	{
+		try{if(t.isAlive()) abort();}
+		
+		//perfectly normal, just means that the thread is already stopped
+		catch(NullPointerException e){}
+		
+		if(l2_learning){
+			macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 		}
-		if(l2_learning) macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+			
 		this.featureReply = fr;
 		this.stream = stream;
 		this.sock = sock;
@@ -318,5 +347,4 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	         t.start ();
 	      }
 	}
-
 }
