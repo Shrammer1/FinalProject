@@ -6,10 +6,9 @@ import java.util.ArrayList;
 import org.openflow.protocol.OFType;
 
 /**
- * @author Nicholas Landriault
+ * @author Nick
  *	
- *This is the interface that both the client and server MUST have either 
- *included in their source files or included in their build path.
+ *This is the interface that both the client and server MUST have either included in their source files or included in their build path.
  */
 
 public interface OVSwitchAPI extends Remote {
@@ -21,4 +20,5 @@ public interface OVSwitchAPI extends Remote {
 	public boolean unregister(String id, OFType type) throws RemoteException;
 	public boolean unregister(String id, ArrayList<OFType> types) throws RemoteException;
 	public boolean isAlive() throws RemoteException;
+	
 }

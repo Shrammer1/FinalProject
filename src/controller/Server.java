@@ -39,6 +39,7 @@ public class Server implements Runnable{
 	@Override
 	public void run(){
 		
+		
 		try{
 			ServerSocketChannel listenSock = ServerSocketChannel.open();
 			listenSock.configureBlocking(false);
@@ -112,16 +113,16 @@ public class Server implements Runnable{
 		//parse cli arguments
 		if(args.length<1){
 			System.err.println(printUsage());
-			System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
+			System.exit(1);
 		}
-		//this is going to have to be changed before the final version to incorporate all options
+		//this is going to have to be changed before the final version to incorperate all options
 		if(args.length==2){
 			if(args[1].equals("-l2")){
 				l2_learning = true;
 			}
 			else{
 				System.err.println(printUsage());
-				System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
+				System.exit(1);
 			}
 		}
 		Server srv = new Server(args[0], 1099,l2_learning);
