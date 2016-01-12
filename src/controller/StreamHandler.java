@@ -96,7 +96,7 @@ public class StreamHandler implements Runnable{
 	}
 
 	/*
-	 * Method to interrupt a Thread
+	 * Method to interrupt a StreamHandler Thread
 	 */
 	public void stop(){
 		t.interrupt();
@@ -104,7 +104,7 @@ public class StreamHandler implements Runnable{
 	}
 	
 	/*
-	 * Method to allocate/instantiate a new Thread
+	 * Method to allocate/instantiate a new StreamHandler Thread
 	 */
 	public void start (){
       LOGGER.info("Starting " +  threadName);
