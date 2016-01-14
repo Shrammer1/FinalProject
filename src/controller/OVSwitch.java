@@ -136,7 +136,8 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 			return registrations.get(id).register(type);
 		}
 		else{
-			registrations.putIfAbsent(id, new Registration(id,type));
+			//registrations.putIfAbsent(id, new Registration(id,type));
+			registrations.put(id, new Registration(id,type));
 			return true;
 		}
 	}
@@ -153,7 +154,8 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 			return registrations.get(id).register(types);
 		}
 		else{
-			registrations.putIfAbsent(id, new Registration(id,types));
+			//registrations.putIfAbsent(id, new Registration(id,types));
+			registrations.put(id, new Registration(id,types));
 			return true;
 		}
 	}
