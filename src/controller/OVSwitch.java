@@ -381,18 +381,27 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
    }
 	
 	/*
-	 * Method for hot operation abort
+	 * Method for hot operation abort an OVSwitch Thread
 	 */
 	private void abort(){
 		stop();
+		/*
+		 * If Layer 2 functionality is enabled, stop packet handling
+		 */
 		if(l2_learning){
 			pkhl.stop();
 			pkhl=null;
 		}
+		/*
+		 * Stop Stream Handler Thread
+		 */
 		sthl.stop();
 		sthl=null;
 		t=null;
 		try {
+			/*
+			 * Close the socket
+			 */
 			sock.close();
 		} catch (IOException e) {
 
@@ -405,11 +414,17 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 
 			OFFeaturesReply fr)
 	{
+		/*
+		 * If there is a Thread alive, abort it
+		 */
 		try{if(t.isAlive()) abort();}
 		
 		//perfectly normal, just means that the thread is already stopped
 		catch(NullPointerException e){}
 		
+		/*
+		 * If Layer 2 functionality is enabled, reinitialize macTable
+		 */
 		if(l2_learning){
 			macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 		}
