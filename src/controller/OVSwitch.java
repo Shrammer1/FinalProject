@@ -83,6 +83,10 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		this.featureReply = fr;
 		this.switchTimeout = swtime;
 		this.l2_learning = l2_learning;
+		
+		/*
+		 * LRU (Last-Recently-Used Cache)
+		 */
 		if(l2_learning) macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 	}
 	
@@ -99,10 +103,6 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		return nickname + "_" + switchID;
 	}
 	
-	public void setSwitchTimeout(int switchTimeout) {
-		this.switchTimeout = switchTimeout;
-	}
-
 	public OFFeaturesReply getFeatures(){
 		return featureReply;
 	}
@@ -115,6 +115,10 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 		return nickname;
 	}
 	
+	public void setSwitchTimeout(int switchTimeout) {
+		this.switchTimeout = switchTimeout;
+	}
+
 	public void setSwitchNickName(String s){
 		nickname = s;
 	}
@@ -228,56 +232,122 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
         try {
         	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         	
+        	/*
+        	 * Sending/Buffering the list of OFMessages for processing
+        	 */
         	sthl.sendMsg(l);
+        	
+        	/*
+        	 * Clearing the list of OFMessages
+        	 */
         	l.clear();
         	
         	boolean waitForReply = false;
         	
+        	/*
+        	 * Processing of messages available in stream
+        	 */
         	OFMessage msg = null;
             while(t.isInterrupted()==false){
             	
             	try{
             		msgIn.addAll(stream.read());
-            		Thread.sleep(0, 1);
-            	}catch(NullPointerException e){
+            		Thread.sleep(0, 1); //(ms,ns); ownership not lost
+            	}
+            	//Action taken upon NULL stream
+            	catch(NullPointerException e){
             		abort();
-            		return;
+            		return; //Return to previous try/catch section after abort
             	}
             	
-            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastHeard > 4 && waitForReply==false){
+            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
+            			- lastHeard > 4 && waitForReply==false)
+            	{
+            		/*
+            		 * Create an OFMessage of type ECHO_REQUEST and send it for
+            		 * processing.
+            		 */
             		l.add(factory.getMessage(OFType.ECHO_REQUEST));
             		sthl.sendMsg(l);
+            		/*
+            		 * Clear the list of OFMessages after previous operation
+            		 */
 				    l.clear();
+				    /*
+				     * Update boolean flag for replies to inform of the change
+				     */
 				    waitForReply = true;
             	}
             	
-            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastHeard > 10){ //switch timed out. delete the connection and make it start from scratch
+            	/*
+            	 * Processing of time out. Forcing to abort and start from scratch
+            	 */
+            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
+            			- lastHeard > 10)
+            	{
             		abort();
             		return;
             	}
             	
+            	/*
+            	 * Process messages if they exist
+            	 */
     	        if(!(msgIn.size()==0)){
 	    			msg = msgIn.remove(0);
+	    			//Case of an ECHO_REQUEST
 	    			if(msg.getType() == OFType.ECHO_REQUEST){
+	    				
+	    				/*
+	    				 * Update the timer/time stamp
+	    				 */
 	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+	    				
+	    				/*
+	    				 * Create and send and ECHO_REPLY message for processing 
+	    				 */
     		    		l.add(factory.getMessage(OFType.ECHO_REPLY));
     		    		sthl.sendMsg(l);
+    		    		/*
+                		 * Clear the list of OFMessages after previous operation
+                		 */
     				    l.clear();
+    				    /*
+    				     * Update boolean flag for replies to inform of the change
+    				     */
     				    waitForReply = false;
     		    	}
+	    			//Case of an ECHO_REPLY
 	    			else if(msg.getType() == OFType.ECHO_REPLY){
+	    				
+	    				/*
+	    				 * Update the timer/time stamp
+	    				 */
 	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+	    				/*
+    				     * Update boolean flag for replies to inform of the change
+    				     */
 	    				waitForReply = false;
     		    	}
+	    			//Any other case
 	    			else {
+	    				/*
+	    				 * Evaluate if Layer 2 functionality is enabled and act
+	    				 * upon it
+	    				 */
 	    				if(l2_learning){
+	    					/*
+	    					 * Add the message to the packet handler and
+	    					 * activate a Thread for processing
+	    					 */
 	    					pkhl.addPacket(msg);
 	    					pkhl.wakeUp();
 	    				}
+	    				/*
+	    				 * If no Layer 2 functionality enabled, do nothing
+	    				 */
 	    				else{
 	    					
-	    				}
-	    				
+	    				}	
 	    			}
     	        }
             }
@@ -288,16 +358,22 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 			LOGGER.log(Level.SEVERE, e.toString());
 			return;
 		}
+        
         this.abort();
 	}
 	
-	
+	/*
+	 * Method for Stopping an OVSwitch Thread
+	 */
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
 		if(l2_learning) pkhl.stop();
 	}
 	
+	/*
+	 * Method for Starting an OVSwitch Thread
+	 */
 	public void start (){
       LOGGER.info("Starting " +  threadName + "\t" + "Switch ID: " + switchID);
       if (t == null){
@@ -307,18 +383,27 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
    }
 	
 	/*
-	 * Method for hot operation abort
+	 * Method for hot operation abort an OVSwitch Thread
 	 */
 	private void abort(){
 		stop();
+		/*
+		 * If Layer 2 functionality is enabled, stop packet handling
+		 */
 		if(l2_learning){
 			pkhl.stop();
 			pkhl=null;
 		}
+		/*
+		 * Stop Stream Handler Thread
+		 */
 		sthl.stop();
 		sthl=null;
 		t=null;
 		try {
+			/*
+			 * Close the socket
+			 */
 			sock.close();
 		} catch (IOException e) {
 
@@ -331,11 +416,17 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 
 			OFFeaturesReply fr)
 	{
+		/*
+		 * If there is a Thread alive, abort it
+		 */
 		try{if(t.isAlive()) abort();}
 		
 		//perfectly normal, just means that the thread is already stopped
 		catch(NullPointerException e){}
 		
+		/*
+		 * If Layer 2 functionality is enabled, reinitialize macTable
+		 */
 		if(l2_learning){
 			macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
 		}
