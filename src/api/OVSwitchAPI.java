@@ -1,8 +1,8 @@
-package controller;
+package api;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-
+import java.util.Queue;
 import org.openflow.protocol.OFType;
 
 /**
@@ -21,4 +21,14 @@ public interface OVSwitchAPI extends Remote {
 	public boolean unregister(String id, OFType type) throws RemoteException;
 	public boolean unregister(String id, ArrayList<OFType> types) throws RemoteException;
 	public boolean isAlive() throws RemoteException;
+	public void sendMsg(byte[] msg) throws RemoteException;
+	public Queue<byte[]> getMessages(String id) throws RemoteException;
+	
+	/**
+	 * Blocks until there is a message for the registered remote application
+	 * 
+	 * @param id String id for the registered OFMessage types
+	 * @return OFMessage at the front of the queue 
+	 */
+	public byte[] getMessage(String id)throws RemoteException;
 }

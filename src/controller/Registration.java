@@ -1,6 +1,8 @@
 package controller;
 import java.util.ArrayList;
-
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 
 /*
@@ -22,7 +24,7 @@ public class Registration {
 	 **************************************************/
 	private String id;
 	private ArrayList<OFType> types = new ArrayList<OFType>();
-	
+	private BlockingQueue<OFMessage> msgs = new LinkedBlockingQueue<OFMessage>();
 	
 	/**************************************************
 	 * CONSTRUCTORS
@@ -48,6 +50,24 @@ public class Registration {
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
+	public void addMsg(OFMessage msg){
+		msgs.add(msg);
+	}
+	public OFMessage poll(){
+		return msgs.poll();
+	}
+	public OFMessage take(){
+		try {
+			return msgs.take();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	public boolean msgsAvailable(){
+		return msgs.isEmpty();
+	}
+	
 	//Method to verify if the instance contains certain OFType
 	public boolean contains(OFType type){
 		if(types.contains(type)){

@@ -1,26 +1,37 @@
 package controller;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.util.LRULinkedHashMap;
+import api.OVSwitchAPI;
 
 /*
  * Runnable class
  */
-public class OVSwitch implements Runnable, OVSwitchAPI{
+public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchAPI{
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -5333332671617251523L;
+
+
 	/**************************************************
 	 * PRIVATE VARIABLES
 	 **************************************************/
@@ -74,7 +85,7 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	 * CONSTRUCTORS
 	 **************************************************/
 	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, 
-			SocketChannel s, OFFeaturesReply fr, int swtime, boolean l2_learning) 
+			SocketChannel s, OFFeaturesReply fr, int swtime, boolean l2_learning) throws RemoteException
 	{
 		threadName = name;
 		stream = strm;
@@ -125,6 +136,34 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	
 	public void setSwitchID(String l){
 		switchID = l;
+	}
+	
+	
+	public void sendMsg(byte[] msgs){
+		List<OFMessage> l = factory.parseMessages(ByteBuffer.wrap(msgs));
+		sthl.sendMsg(l);
+	}
+	
+	public Queue<byte[]> getMessages(String id){
+		Queue<byte[]> ret = new ConcurrentLinkedQueue<byte[]>();
+		while(registrations.get(id).msgsAvailable()){
+			OFMessage msg = registrations.get(id).take();
+			ByteBuffer toData = ByteBuffer.allocate(msg.getLengthU());
+			registrations.get(id).take().writeTo(toData);
+			ret.add(toData.array());
+		}
+		return ret;
+	}
+	
+
+	public byte[] getMessage(String id){
+		OFMessage msg = registrations.get(id).take();
+		ByteBuffer toData =  ByteBuffer.allocate(msg.getLengthU());
+		msg.writeTo(toData);
+		byte[] ret = new byte[msg.getLengthU()];
+		ret = toData.array();
+		return ret;
+			
 	}
 	
 	
@@ -342,11 +381,11 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	    					pkhl.addPacket(msg);
 	    					pkhl.wakeUp();
 	    				}
-	    				/*
-	    				 * If no Layer 2 functionality enabled, do nothing
-	    				 */
+	    				
 	    				else{
-	    					
+	    					for(Map.Entry<String,Registration> r: registrations.entrySet()){
+	    						r.getValue().addMsg(msg);
+	    					}
 	    				}	
 	    			}
     	        }
@@ -440,4 +479,7 @@ public class OVSwitch implements Runnable, OVSwitchAPI{
 	         t.start ();
 	      }
 	}
+
+
+	
 }

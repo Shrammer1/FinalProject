@@ -9,5 +9,10 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="libs/slf4j-api-1.7.13.jar" sourcepath="libs/slf4j-api-1.7.13-sources.jar"/>
 	<classpathentry kind="lib" path="libs/slf4j-simple-1.7.13.jar" sourcepath="libs/slf4j-simple-1.7.13-sources.jar"/>
+	<classpathentry kind="lib" path="libs/json-20150729.jar" sourcepath="libs/json-20150729-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/FinalProject/libs/json-20150729-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
