@@ -6,7 +6,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -19,6 +21,7 @@ import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.util.LRULinkedHashMap;
 import org.openflow.util.U16;
+
 import api.OVSwitchAPI;
 import api.SwitchHandlerAPI;
 
@@ -39,6 +42,11 @@ public class TestApplication {
 			for(String sw: swLst){
 				OVSwitchAPI swAPI = (OVSwitchAPI) Naming.lookup(serverURL + sw);
 				switches.add(new RemoteSwitch(swAPI,new PacketHandler(sw, sw + "sw_pkhl", swAPI)));
+				
+				/*
+				 * gB Testing
+				 */
+				System.out.println("SW: " + swAPI.getSwitchName() + " t_out: " + swAPI.getSwitchTimeout());
 			}
 			
 			
