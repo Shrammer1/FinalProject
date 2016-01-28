@@ -23,7 +23,7 @@ import api.OVSwitchAPI;
 import api.SwitchHandlerAPI;
 
 
-public class TestApplication {
+public class L2_LearningAPP {
 	
 	public static void main(String[] args) {
 			
