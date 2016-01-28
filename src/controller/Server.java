@@ -1,3 +1,4 @@
+package controller;
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
@@ -15,22 +16,56 @@ import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.factory.BasicFactory;
 
-
+/*
+ * Server runnable class
+ */
 public class Server implements Runnable{
+
+	/**************************************************
+	 * PRIVATE VARIABLES
+	 **************************************************/
+	 /* Built-in log levels available : SEVERE, WARNING, INFO, CONFIG, FINE, 
+	 * FINER, FINEST
+	 */
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
+	
+	/*
+	 * For RMI implementation
+	 */
 	private Registry reg;
 	private int port;
 	private Thread t;
 	private String threadName;
 	
+	/*
+	 * boolean variable to control Layer 2 behavior
+	 */
+	private boolean l2_learning;
+	
+	
+	/**************************************************
+	 * CONSTRUCTORS
+	 **************************************************/
 	public Server(String t, int prt){
 		this.threadName = t;
 		this.port = prt;
+		this.l2_learning=false;
+	}
+	public Server(String t, int prt,boolean l2_learning){
+		this.threadName = t;
+		this.port = prt;
+		this.l2_learning=l2_learning;
 	}
 	
+	/**************************************************
+	 * PUBLIC METHODS
+	 **************************************************/
+	
+	/*
+	 * Server listens on port 6001
+	 */
 	@Override
 	public void run(){
-		
 		
 		try{
 			ServerSocketChannel listenSock = ServerSocketChannel.open();
@@ -38,11 +73,16 @@ public class Server implements Runnable{
 		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
-		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg);
+		    /*
+		     * Instantiating and Starting the switch handler
+		     */
+		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg,l2_learning);
 		    swhl.start();
 		    
+		    /*
+		     * Always running and listening for incoming Asynchronous OFMessages
+		     */
 			while(true){
-			    
 				BasicFactory factory = new BasicFactory();
 			    SocketChannel sock = null;
 			    while(sock==null){
@@ -60,36 +100,49 @@ public class Server implements Runnable{
 	}
 	
 	
-	
-	
-	
-	
+	/*
+	 * Method to stop a Thread of a Server
+	 */
 	public void stop(){
 		t.interrupt();
 	}
 	
+	/*
+	 * Method to start a Thread of a Server
+	 */
 	public void start (){
 		LOGGER.setLevel(Level.FINEST);
 		try {
+			/*
+			 * Creating a file to store logs
+			 */
 			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
 			//SimpleFormatter sf = new SimpleFormatter();
 			//fh.setFormatter(sf);
 			
 			fh.setFormatter(new LogFormatter());
-			
 			LOGGER.addHandler(fh);
 		} catch (SecurityException e1) {
 			e1.printStackTrace();
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		}
+		/*
+		 * Informing that Thread has started. Server Thread ready and listening
+		 */
 		LOGGER.info("Starting " +  threadName);
+		/*
+		 * Part of the RMI implementation on the server
+		 */
 		try {
 			reg = LocateRegistry.createRegistry(port);
 			LOGGER.info("RMI Registry created on port: " + port);
 		} catch (RemoteException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		}
+		/*
+		 * If the Thread does not exist, then create one
+		 */
 		if (t == null){
 			t = new Thread (this, threadName);
 			t.start();
@@ -97,19 +150,56 @@ public class Server implements Runnable{
    }
 	
 	
-	
+	/*
+	 * Main method to be used on CLI with additional arguments for extra
+	 * functionality. L2 behavior argument option written by Wesley Cooper.
+	 */
 	public static void main(String args[]){
-		if(!(args.length==1)){
-			System.err.println("Usage: THISFILENAME <Server_Name>");
-			System.exit(1);
+		boolean l2_learning=false;
+		/*
+		 * Parsing CLI arguments 
+		 */
+		if(args.length<1){
+			System.err.println(printUsage());
+			System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
 		}
-		Server srv = new Server(args[0], 1099);
+		//this is going to have to be changed before the final version to incorporate all options
+		if(args.length==2){
+			if(args[1].equals("-l2")){
+				l2_learning = true;
+			}
+			else{
+				System.err.println(printUsage());
+				System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
+			}
+		}
+		/*
+		 * Port 1099 for RMI registry functionality
+		 */
+		Server srv = new Server(args[0], 1099,l2_learning);
+		
+		/*
+		 * Starting a Server Thread
+		 */
 		srv.start();
 		
 		
 	}
 	
+	/**************************************************
+	 * PRIVATE METHODS
+	 **************************************************/
+	private static String printUsage(){
+		return "Usage: THISFILENAME <Server_Name>\nOptions:\n\n-l2\tBuilt in standard layer 2 learning";
+	}
 	
+	
+	/**************************************************
+	 * PRIVATE CLASS
+	 **************************************************/
+	/*
+	 * Entire private class to be used for logs formatting. 
+	 */
 	private class LogFormatter extends Formatter
 	{
 	    SimpleDateFormat dateFormatter = new SimpleDateFormat ("MM/dd/yy '-' HH:mm:ss a");
@@ -123,13 +213,13 @@ public class Server implements Runnable{
 	        buffer.append(record.getMessage() + "\n");
 	        return buffer.toString();
 	    }
-
-	}    
-	
-	
-	
+	}    	
 }
 	
+	/**************************************************
+	 * UNUSED CODE ---TESTING---
+	 **************************************************/
+
 	/*
 	public static void main(String args[]){
 		
