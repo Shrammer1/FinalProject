@@ -43,9 +43,7 @@ public class TestApplication {
 				OVSwitchAPI swAPI = (OVSwitchAPI) Naming.lookup(serverURL + sw);
 				switches.add(new RemoteSwitch(swAPI,new PacketHandler(sw, sw + "sw_pkhl", swAPI)));
 				
-				/*
-				 * gB Testing
-				 */
+				//gB Testing
 				System.out.println("SW: " + swAPI.getSwitchName() + " t_out: " + swAPI.getSwitchTimeout());
 			}
 			
