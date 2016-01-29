@@ -59,9 +59,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	private Registry reg;
 	private String regName;
 	
-	/*
-	 * boolean variable to control Layer 2 behavior
-	 */
+	//boolean variable to control Layer 2 behavior
 	private boolean l2_learning = false;
 	
 	
@@ -99,10 +97,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 			for(int i = 0; i<switches.size();i++){
 				res.add(switches.get(i).getSwitchName());
 			}
-			/*
-			 * Allowing those waiting on the object's monitor to continue using
-			 * it.
-			 */
+			//Allowing those waiting on the object's monitor to continue using it
 			switches.notifyAll();
 		}
 		return res;
@@ -174,7 +169,6 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	}
 	
 	
-	
 	@Override
 	public void run(){
 		while(!(t.isInterrupted())){
@@ -188,9 +182,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	}
 	
 	
-	/*
-	 * Method to stop a Thread of a SwitchHandler
-	 */
+	//Method to stop a Thread of a SwitchHandler
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
@@ -242,9 +234,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		private String swName;
 		
 		
-		/*
-		 * Constructor
-		 */
+		//Constructor
 		public SwitchSetup(String name,String swName, SocketChannel sock, 
 				OFMessageAsyncStream stream,SwitchHandler swhl) 
 		{
@@ -256,9 +246,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 			this.start();
 		}	
 		
-		/*
-		 * Method to abort a Thread of Switch Setup
-		 */
+		//Method to abort a Thread of Switch Setup
 		private void abort(){
 			stop();
 		}			
@@ -299,9 +287,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		        l.add(stream.getMessageFactory().getMessage(OFType.FEATURES_REQUEST));
 		        stream.write(l);
 		        
-		        /*
-		         * If the stream was used for transfer messages, then clean it
-		         */
+		        //If the stream was used for transfer messages, then clean it
 		        while(stream.needsFlush()){
 		        	stream.flush();
 		        }
@@ -330,9 +316,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	        this.abort();
 		}
 		
-		/*
-		 * Method to stop/interrupt a Thread of SwitchSetup
-		 */
+		//Method to stop/interrupt a Thread of SwitchSetup
 		public void stop(){
 			t.interrupt();
 			LOGGER.info("Stopping " +  threadName);

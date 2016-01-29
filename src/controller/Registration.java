@@ -76,10 +76,7 @@ public class Registration {
 		return false;
 	}
 	
-	/*
-	 * Method to add an OFType to the instance and return boolean result
-	 * of the operation
-	 */
+	//Method to add an OFType to the instance and return boolean resultof the operation
 	public boolean register(OFType type){
 		if(!(contains(type))){
 			types.add(type);
@@ -88,10 +85,7 @@ public class Registration {
 		return false;
 	}
 	
-	/*
-	 * Method to add several OFTypes to an instance and return boolean result
-	 * of the operation
-	 */
+	//Method to add several OFTypes to an instance and return boolean result of the operation
 	public boolean register(ArrayList<OFType> types){
 		for(OFType t : types){
 			if(this.types.contains(t)) return false;
@@ -100,23 +94,17 @@ public class Registration {
 		return true;
 	}
 	
-	/*
-	 * Method to remove an OFType of an instance
-	 */
+	//Method to remove an OFType of an instance
 	public boolean unregister(OFType type){
 		return types.remove(type);
 	}
 	
-	/*
-	 * Method to remove several OFTypes of an instance
-	 */
+	//Method to remove several OFTypes of an instance
 	public boolean unregister(ArrayList<OFType> types){
 		return types.removeAll(types);
 	}
 	
-	/*
-	 * Method to obtain the ID of an instantiated object
-	 */
+	//Method to obtain the ID of an instantiated object
 	public String getID() {
 		return id;
 	}

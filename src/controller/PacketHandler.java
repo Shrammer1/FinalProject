@@ -76,9 +76,7 @@ public class PacketHandler implements Runnable{
 	/**************************************************
 	 * PRIVATE METHODS
 	 **************************************************/
-	/*
-	 * 
-	 */
+	
 	private void handle_PACKETIN(OFMessage msg){
 		OFPacketIn pi;
 		OFMatch match = new OFMatch();
@@ -129,14 +127,9 @@ public class PacketHandler implements Runnable{
             outPort = macTable.get(dlDstKey);
         }
 
-        /*
-         * STEP_3_A: If the output port is known, create and push a FlowMod
-         */
+        //STEP_3_A: If the output port is known, create and push a FlowMod
         if (outPort != null) {
-            /*
-             * Retrieves an OFMessage instance corresponding to the specified 
-             * OFType.
-             */
+            //Retrieves an OFMessage instance corresponding to the specified OFType
         	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
             fm.setBufferId(bufferId);
             fm.setCommand((short) 0);
@@ -160,43 +153,31 @@ public class PacketHandler implements Runnable{
             List<OFAction> actions = new ArrayList<OFAction>();
             actions.add(action);
             fm.setActions(actions);
-            /*
-             * Setting header
-             */
+            //Setting header
             fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
             sthl.sendMsg(fm);
         }
 
-        /*
-         * Sending packet out
-         */
+        //Sending packet out
         if (outPort == null || pi.getBufferId() == 0xffffffff) {
             OFPacketOut po = new OFPacketOut();
             po.setBufferId(bufferId);
             po.setInPort(pi.getInPort());
 
-            /*
-             * Setting actions
-             */
+            //Setting actions
             OFActionOutput action = new OFActionOutput();
             action.setMaxLength((short) 0);
-            /*
-             * STEP_3_B: If the output port is unknown, flood the packet.
-             */
+            //STEP_3_B: If the output port is unknown, flood the packet.
             action.setPort((short) ((outPort == null) ? OFPort.OFPP_FLOOD.getValue() : outPort));
             List<OFAction> actions = new ArrayList<OFAction>();
             actions.add(action);
             po.setActions(actions);
             po.setActionsLength((short) OFActionOutput.MINIMUM_LENGTH);
 
-            /*
-             * Setting data if needed
-             */
+            //Setting data if needed
             if (bufferId == 0xffffffff) {
                 byte[] packetData = pi.getPacketData();
-                /*
-                 * Setting header
-                 */
+                //Setting header
                 po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH + po.getActionsLength() + packetData.length));
                 po.setPacketData(packetData);
             } else {
@@ -210,40 +191,29 @@ public class PacketHandler implements Runnable{
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
-	/*
-	 * Adding a packet to the queue
-	 */
+	//Adding a packet to the queue
 	public void addPacket(OFMessage pk){
 		q.add(pk);
 	}
 	
-	/*
-	 * Waking up a single thread that is waiting on this object's monitor.
-	 */
+	//Waking up a single thread that is waiting on this object's monitor.
 	public void wakeUp(){
 		synchronized (t) {
 			t.notify();
 		}
 	}
 	
-	/*
-	 * Sends a flow mod that drops all packets 
-	 */
+	//Sends a flow mod that drops all packets
 	public void dropAll(){
 	
 		OFMatch match = new OFMatch();
-		/*
-         * Retrieves an OFMessage instance corresponding to the specified 
-         * OFType.
-         */
+		//Retrieves an OFMessage instance corresponding to the specified OFType
 		OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
         fm.setCommand((short) 0);
         fm.setCookie(0);
         fm.setHardTimeout((short) 0);
         
-        /*
-         * Matching all coming in from that port
-         */
+        //Matching all coming in from that port
         match.setInputPort(OFPort.OFPP_NONE.getValue());
         	                
         fm.setMatch(match);
@@ -265,10 +235,7 @@ public class PacketHandler implements Runnable{
 	    OFMessage msg = null;
 	    while(t.isInterrupted()==false){
 	    	
-	    	/*
-	    	 * Retrieves and removes the head of this queue, or returns null 
-	    	 * if this queue is empty
-	    	 */
+	    	//Retrieves and removes the head of this queue, or returns null if this queue is empty
 	    	msg = q.poll();
 	    	if(msg==null){
 	    		try {
@@ -285,25 +252,18 @@ public class PacketHandler implements Runnable{
 			    	handle_PACKETIN(msg);
 	    		}    		
     		}
-	    	
-		    /*
-		     * Clearing the list of OFMessages
-		     */
+		    //Clearing the list of OFMessages
 	    	l.clear();
 	    }
 	}	
 	
-	/*
-	 * Method to interrupt a PacketHandler Thread
-	 */
+	//Method to interrupt a PacketHandler Thread
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
 	}
 	
-	/*
-	 * Method to allocate/instantiate a new PacketHandler Thread
-	 */
+	//Method to allocate/instantiate a new PacketHandler Thread
 	public void start (){
       LOGGER.info("Starting " +  threadName);
       if (t == null){
