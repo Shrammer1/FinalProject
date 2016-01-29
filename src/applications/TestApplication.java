@@ -180,9 +180,7 @@ public class TestApplication {
 	            outPort = macTable.get(dlDstKey);
 	        }
 
-	        /*
-	         * STEP_3_A: If the output port is known, create and push a FlowMod
-	         */
+	        //STEP_3_A: If the output port is known, create and push a FlowMod
 	        if (outPort != null) {
 	            /*
 	             * Retrieves an OFMessage instance corresponding to the specified 
@@ -211,9 +209,7 @@ public class TestApplication {
 	            List<OFAction> actions = new ArrayList<OFAction>();
 	            actions.add(action);
 	            fm.setActions(actions);
-	            /*
-	             * Setting header
-	             */
+	            //Setting header
 	            fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
 	            ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
 	            fm.writeTo(toData);
@@ -222,36 +218,26 @@ public class TestApplication {
 				swAPI.sendMsg(msgData);
 	        }
 
-	        /*
-	         * Sending packet out
-	         */
+	        //Sending packet out
 	        if (outPort == null || pi.getBufferId() == 0xffffffff) {
 	            OFPacketOut po = new OFPacketOut();
 	            po.setBufferId(bufferId);
 	            po.setInPort(pi.getInPort());
 
-	            /*
-	             * Setting actions
-	             */
+	            //Setting actions
 	            OFActionOutput action = new OFActionOutput();
 	            action.setMaxLength((short) 0);
-	            /*
-	             * STEP_3_B: If the output port is unknown, flood the packet.
-	             */
+	            //STEP_3_B: If the output port is unknown, flood the packet.
 	            action.setPort((short) ((outPort == null) ? OFPort.OFPP_FLOOD.getValue() : outPort));
 	            List<OFAction> actions = new ArrayList<OFAction>();
 	            actions.add(action);
 	            po.setActions(actions);
 	            po.setActionsLength((short) OFActionOutput.MINIMUM_LENGTH);
 
-	            /*
-	             * Setting data if needed
-	             */
+	            //Setting data if needed
 	            if (bufferId == 0xffffffff) {
 	                byte[] packetData = pi.getPacketData();
-	                /*
-	                 * Setting header
-	                 */
+	                //Setting header
 	                po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH + po.getActionsLength() + packetData.length));
 	                po.setPacketData(packetData);
 	            } else {
@@ -272,24 +258,17 @@ public class TestApplication {
 		 * @throws RemoteException 
 		 **************************************************/
 		
-		/*
-		 * Sends a flow mod that drops all packets 
-		 */
+		//Sends a flow mod that drops all packets
 		public void dropAll() throws RemoteException{
 		
 			OFMatch match = new OFMatch();
-			/*
-	         * Retrieves an OFMessage instance corresponding to the specified 
-	         * OFType.
-	         */
+			//Retrieves an OFMessage instance corresponding to the specified OFType
 			OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
 	        fm.setCommand((short) 0);
 	        fm.setCookie(0);
 	        fm.setHardTimeout((short) 0);
 	        
-	        /*
-	         * Matching all coming in from that port
-	         */
+	        //Matching all coming in from that port
 	        match.setInputPort(OFPort.OFPP_NONE.getValue());
 	        	                
 	        fm.setMatch(match);
@@ -333,26 +312,18 @@ public class TestApplication {
 						}
 		    		}
 		    	}
-	    		
-		    	
-			    /*
-			     * Clearing the list of OFMessages
-			     */
+			    //Clearing the list of OFMessages
 		    	l.clear();
 		    }
 		}	
 		
-		/*
-		 * Method to interrupt a PacketHandler Thread
-		 */
+		//Method to interrupt a PacketHandler Thread
 		public void stop(){
 			t.interrupt();
 			System.out.println("Stopping " +  threadName);
 		}
 		
-		/*
-		 * Method to allocate/instantiate a new PacketHandler Thread
-		 */
+		//Method to allocate/instantiate a new PacketHandler Thread
 		public void start (){
 	      System.out.println("Starting " +  threadName);
 	      if (t == null){
@@ -361,7 +332,4 @@ public class TestApplication {
 	      }
 		}
 	}
-
-	
-	
 }
