@@ -16,6 +16,7 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
 
 import api.SwitchHandlerAPI;
+import topology.TopologyMapper;
 
 /**
  * 
@@ -49,6 +50,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	private String threadName;
 	private Thread t;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
+	private TopologyMapper topo;
 	
 	/*
 	 * Remote interface to a simple remote object registry that 
@@ -75,6 +77,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		this.reg = reg;
 		this.regName = regName;
 		this.l2_learning = l2_learning;
+		this.topo = new TopologyMapper("TopogoyMapper",switches);
 	}
 	
 	/**************************************************
@@ -131,7 +134,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	public synchronized void addSwitch(SocketChannel sock, OFMessageAsyncStream stream){
 		synchronized (switches) {
 			try {
-				new SwitchSetup(threadName + "_SetupSwitch_" + sock.getRemoteAddress(),threadName,sock, stream, this);
+				new SwitchSetup(threadName + "_SetupSwitch_" + sock.getRemoteAddress(),threadName,sock, stream, topo, this);
 			} catch (IOException e) {
 				LOGGER.log(Level.SEVERE, e.toString());
 			}
@@ -177,6 +180,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	
 	@Override
 	public void run(){
+		topo.start();
 		while(!(t.isInterrupted())){
 			try {
 				Thread.sleep(0, 1);
@@ -240,19 +244,20 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		private SocketChannel sock;
 		private SwitchHandler swhl; 
 		private String swName;
-		
+		private TopologyMapper topo;
 		
 		/*
 		 * Constructor
 		 */
 		public SwitchSetup(String name,String swName, SocketChannel sock, 
-				OFMessageAsyncStream stream,SwitchHandler swhl) 
+				OFMessageAsyncStream stream, TopologyMapper topo, SwitchHandler swhl) 
 		{
 			threadName = name;
 			this.stream = stream;
 			this.sock = sock;
 			this.swhl = swhl;
 			this.swName = swName;
+			this.topo = topo;
 			this.start();
 		}	
 		
@@ -288,7 +293,6 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		@Override
 		public void run(){
 			OVSwitch sw = null;
-			
 			/*
 			 * Obtains OFMessages and writes them onto the stream of 
 			 * OFMessageAsync.
@@ -312,14 +316,13 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		         * and initializes it. If it existed before it gets restarted.
 		         */
 		        OFFeaturesReply fr = getFeaturesReply();
-		        sw = swhl.getSwitch(Long.toHexString(fr.getDatapathId()));
+		        sw = swhl.getSwitch("0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()));
 		        if(sw==null){
-		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),
-		        			"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length()) 
-		        			+ Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,swhl.l2_learning);
+		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,topo,swhl.l2_learning);
 		        }
 		        else{
 		        	sw.restart(sock,stream,fr);
+		        	return;
 		        }
 		        
 			} catch (IOException e) {

@@ -1,11 +1,11 @@
 package controller;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.logging.Logger;
-
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -65,11 +65,10 @@ public class PacketHandler implements Runnable{
 	/**************************************************
 	 * CONSTRUCTORS
 	 **************************************************/
-	public PacketHandler(String name, Map<Integer, Short> macTable, 
-			StreamHandler sthl)
+	public PacketHandler(String name, StreamHandler sthl)
 	{
 		threadName = name;
-		this.macTable=macTable;
+		this.macTable=new LinkedHashMap<Integer, Short>(64001, 64000);
 		this.sthl = sthl;
 	}
 	

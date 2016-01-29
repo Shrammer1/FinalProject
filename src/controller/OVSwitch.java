@@ -16,10 +16,15 @@ import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.OFPacketOut;
+import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFType;
+import org.openflow.protocol.action.OFAction;
+import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
-import org.openflow.util.LRULinkedHashMap;
 import api.OVSwitchAPI;
+import topology.LLDPMessage;
+import topology.TopologyMapper;
 
 /*
  * Runnable class
@@ -44,22 +49,14 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	 */
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
-	
-	/*macTable variable only used if l2_learning (layer 2 learning) is enabled. 
-	 * See other references on how to enable this feature/behavior. 
-	 * If feature enabled, the Switch stays in Fail_Standalone mode where there 
-	 * is no management from the controller, otherwise (feature disabled) the 
-	 * Switch stays in Fail_Secure mode where it drops all until connected/managed
-	 * by a controller.
-	 */
-	private Map<Integer, Short> macTable;
+
 	
 	/*
 	 * boolean variable to control Layer 2 behavior
 	 */
 	private boolean l2_learning = false;
 	
-	
+	private TopologyMapper topo;
 	private PacketHandler pkhl;
 	private String threadName;
 	private OFMessageAsyncStream stream;
@@ -85,7 +82,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	 * CONSTRUCTORS
 	 **************************************************/
 	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, 
-			SocketChannel s, OFFeaturesReply fr, int swtime, boolean l2_learning) throws RemoteException
+			SocketChannel s, OFFeaturesReply fr, int swtime, TopologyMapper topo, boolean l2_learning) throws RemoteException
 	{
 		threadName = name;
 		stream = strm;
@@ -94,11 +91,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		this.featureReply = fr;
 		this.switchTimeout = swtime;
 		this.l2_learning = l2_learning;
-		
-		/*
-		 * LRU (Last-Recently-Used Cache)
-		 */
-		if(l2_learning) macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+		this.topo = topo;
 	}
 	
 	
@@ -231,6 +224,30 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		}
 	}
 	
+	/**
+	 * Sends a PacketOut to the switch containing an LLDP message to each of the switch ports in an attempt to alert directly connected switches of its presence 
+	 */
+	public void discover(){
+		for(OFPhysicalPort ofp : featureReply.getPorts()){
+			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
+			OFActionOutput action = new OFActionOutput();
+            action.setMaxLength((short) 0);
+            action.setPort(ofp.getPortNumber());
+            List<OFAction> actions = new ArrayList<OFAction>();
+            actions.add(action);
+            OFPacketOut pkOut = new OFPacketOut(msg.getMessage(), actions , 0xffffffff);
+			sthl.sendMsg(pkOut);
+		}
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
 	/*
 	 * Method to identify if the corresponding thread is alive, in other words,
 	 * if the thread has been started but has not died yet.
@@ -256,7 +273,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 			/*
 			 * Creating/Instantiating a new PacketHandler Object
 			 */
-			pkhl = new PacketHandler(threadName + "_PacketHandler",macTable,sthl);
+			pkhl = new PacketHandler(threadName + "_PacketHandler",sthl);
 			
 			/*
 			 * Starting a PacketHandler Thread
@@ -267,7 +284,6 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		 * Starting a StreamHandler Thread
 		 */
 		sthl.start();
-		
         try {
         	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         	
@@ -369,6 +385,12 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
     		    	}
 	    			//Any other case
 	    			else {
+	    				
+	    				if(msg.getType() == OFType.PACKET_IN){
+	    					topo.learn(msg, this);
+	    				}
+	    				
+	    				
 	    				/*
 	    				 * Evaluate if Layer 2 functionality is enabled and act
 	    				 * upon it
@@ -381,7 +403,6 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    					pkhl.addPacket(msg);
 	    					pkhl.wakeUp();
 	    				}
-	    				
 	    				else{
 	    					for(Map.Entry<String,Registration> r: registrations.entrySet()){
 	    						r.getValue().addMsg(msg);
@@ -422,7 +443,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
    }
 	
 	/*
-	 * Method for hot operation abort an OVSwitch Thread
+	 * Method for hot operation abort an OVSwitch Thread0
 	 */
 	private void abort(){
 		stop();
@@ -466,10 +487,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		/*
 		 * If Layer 2 functionality is enabled, reinitialize macTable
 		 */
-		if(l2_learning){
-			macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
-		}
-			
+					
 		this.featureReply = fr;
 		this.stream = stream;
 		this.sock = sock;

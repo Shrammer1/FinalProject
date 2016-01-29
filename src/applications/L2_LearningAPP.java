@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -269,6 +268,7 @@ public class L2_LearningAPP {
 		/*
 		 * Sends a flow mod that drops all packets 
 		 */
+		@SuppressWarnings("unused")
 		public void dropAll() throws RemoteException{
 		
 			OFMatch match = new OFMatch();
@@ -339,6 +339,7 @@ public class L2_LearningAPP {
 		/*
 		 * Method to interrupt a PacketHandler Thread
 		 */
+		@SuppressWarnings("unused")
 		public void stop(){
 			t.interrupt();
 			System.out.println("Stopping " +  threadName);
