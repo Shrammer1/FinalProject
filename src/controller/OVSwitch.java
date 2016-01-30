@@ -26,14 +26,9 @@ import api.OVSwitchAPI;
 import topology.LLDPMessage;
 import topology.TopologyMapper;
 
-/*
- * Runnable class
- */
+//Runnable class
 public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchAPI{
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -5333332671617251523L;
 
 
@@ -51,9 +46,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	
 
 	
-	/*
-	 * boolean variable to control Layer 2 behavior
-	 */
+	//boolean variable to control Layer 2 behavior
 	private boolean l2_learning = false;
 	
 	private TopologyMapper topo;
@@ -156,7 +149,6 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		byte[] ret = new byte[msg.getLengthU()];
 		ret = toData.array();
 		return ret;
-			
 	}
 	
 	
@@ -259,9 +251,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	
 	@Override
 	public void run(){
-		/*
-		 * Creating/Instantiating a new StreamHandler Object
-		 */
+		//Creating/Instantiating a new StreamHandler Object
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
 		
 		/*
@@ -270,38 +260,26 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		 */
 		if(l2_learning){
 			
-			/*
-			 * Creating/Instantiating a new PacketHandler Object
-			 */
+			//Creating/Instantiating a new PacketHandler Object
 			pkhl = new PacketHandler(threadName + "_PacketHandler",sthl);
 			
-			/*
-			 * Starting a PacketHandler Thread
-			 */
+			//Starting a PacketHandler Thread
 			pkhl.start();
 		}
-		/*
-		 * Starting a StreamHandler Thread
-		 */
+		//Starting a StreamHandler Thread
 		sthl.start();
         try {
         	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
         	
-        	/*
-        	 * Sending/Buffering the list of OFMessages for processing
-        	 */
+        	//Sending/Buffering the list of OFMessages for processing
         	sthl.sendMsg(l);
         	
-        	/*
-        	 * Clearing the list of OFMessages
-        	 */
+        	//Clearing the list of OFMessages
         	l.clear();
         	
         	boolean waitForReply = false;
         	
-        	/*
-        	 * Processing of messages available in stream
-        	 */
+        	//Processing of messages available in stream
         	OFMessage msg = null;
             while(t.isInterrupted()==false){
             	
@@ -318,25 +296,16 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
             	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
             			- lastHeard > 4 && waitForReply==false)
             	{
-            		/*
-            		 * Create an OFMessage of type ECHO_REQUEST and send it for
-            		 * processing.
-            		 */
+            		//Create an OFMessage of type ECHO_REQUEST and send it for processing
             		l.add(factory.getMessage(OFType.ECHO_REQUEST));
             		sthl.sendMsg(l);
-            		/*
-            		 * Clear the list of OFMessages after previous operation
-            		 */
+            		//Clear the list of OFMessages after previous operation
 				    l.clear();
-				    /*
-				     * Update boolean flag for replies to inform of the change
-				     */
+				    //Update boolean flag for replies to inform of the change
 				    waitForReply = true;
             	}
             	
-            	/*
-            	 * Processing of time out. Forcing to abort and start from scratch
-            	 */
+            	//Processing of time out. Forcing to abort and start from scratch
             	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
             			- lastHeard > 10)
             	{
@@ -344,43 +313,29 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
             		return;
             	}
             	
-            	/*
-            	 * Process messages if they exist
-            	 */
+            	//Process messages if they exist
     	        if(!(msgIn.size()==0)){
 	    			msg = msgIn.remove(0);
 	    			//Case of an ECHO_REQUEST
 	    			if(msg.getType() == OFType.ECHO_REQUEST){
 	    				
-	    				/*
-	    				 * Update the timer/time stamp
-	    				 */
+	    				//Update the timer/time stamp
 	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	    				
-	    				/*
-	    				 * Create and send and ECHO_REPLY message for processing 
-	    				 */
+	    				//Create and send and ECHO_REPLY message for processing
     		    		l.add(factory.getMessage(OFType.ECHO_REPLY));
     		    		sthl.sendMsg(l);
-    		    		/*
-                		 * Clear the list of OFMessages after previous operation
-                		 */
+    		    		//Clear the list of OFMessages after previous operation
     				    l.clear();
-    				    /*
-    				     * Update boolean flag for replies to inform of the change
-    				     */
+    				    //Update boolean flag for replies to inform of the change
     				    waitForReply = false;
     		    	}
 	    			//Case of an ECHO_REPLY
 	    			else if(msg.getType() == OFType.ECHO_REPLY){
 	    				
-	    				/*
-	    				 * Update the timer/time stamp
-	    				 */
+	    				//Update the timer/time stamp
 	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-	    				/*
-    				     * Update boolean flag for replies to inform of the change
-    				     */
+	    				//Update boolean flag for replies to inform of the change
 	    				waitForReply = false;
     		    	}
 	    			//Any other case
@@ -391,15 +346,9 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    				}
 	    				
 	    				
-	    				/*
-	    				 * Evaluate if Layer 2 functionality is enabled and act
-	    				 * upon it
-	    				 */
+	    				//Evaluate if Layer 2 functionality is enabled and act upon it
 	    				if(l2_learning){
-	    					/*
-	    					 * Add the message to the packet handler and
-	    					 * activate a Thread for processing
-	    					 */
+	    					//Add the message to the packet handler and activate a Thread for processing
 	    					pkhl.addPacket(msg);
 	    					pkhl.wakeUp();
 	    				}
@@ -422,18 +371,14 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
         this.abort();
 	}
 	
-	/*
-	 * Method for Stopping an OVSwitch Thread
-	 */
+	//Method for Stopping an OVSwitch Thread
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
 		if(l2_learning) pkhl.stop();
 	}
 	
-	/*
-	 * Method for Starting an OVSwitch Thread
-	 */
+	//Method for Starting an OVSwitch Thread
 	public void start (){
       LOGGER.info("Starting " +  threadName + "\t" + "Switch ID: " + switchID);
       if (t == null){
@@ -442,51 +387,37 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
       }
    }
 	
-	/*
-	 * Method for hot operation abort an OVSwitch Thread0
-	 */
+	//Method for hot operation abort an OVSwitch Thread
 	private void abort(){
 		stop();
-		/*
-		 * If Layer 2 functionality is enabled, stop packet handling
-		 */
+		//If Layer 2 functionality is enabled, stop packet handling
 		if(l2_learning){
 			pkhl.stop();
 			pkhl=null;
 		}
-		/*
-		 * Stop Stream Handler Thread
-		 */
+		//Stop Stream Handler Thread
 		sthl.stop();
 		sthl=null;
 		t=null;
 		try {
-			/*
-			 * Close the socket
-			 */
+			//Close the socket
 			sock.close();
 		} catch (IOException e) {
 
 		}
 	}
 	
-	/*
-	 * Method for hot restart
-	 */
+	//Method for hot restart
 	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 
 			OFFeaturesReply fr)
 	{
-		/*
-		 * If there is a Thread alive, abort it
-		 */
+		//If there is a Thread alive, abort it
 		try{if(t.isAlive()) abort();}
 		
 		//perfectly normal, just means that the thread is already stopped
 		catch(NullPointerException e){}
 		
-		/*
-		 * If Layer 2 functionality is enabled, reinitialize macTable
-		 */
+		//If Layer 2 functionality is enabled, reinitialize macTable
 					
 		this.featureReply = fr;
 		this.stream = stream;
@@ -497,7 +428,4 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	         t.start ();
 	      }
 	}
-
-
-	
 }
