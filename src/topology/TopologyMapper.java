@@ -69,6 +69,9 @@ public class TopologyMapper implements Runnable{
 		}
 	}
 
+	public void learn(LLDPMessage lldpMessage, OVSwitch sw) {
+		//TODO: add code that learns new transit links
+	}
 	
 			
 	
@@ -128,4 +131,6 @@ public class TopologyMapper implements Runnable{
 			return TopologyMapper.this;
 		}
 	}
+
+
 }

@@ -15,7 +15,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
+import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFType;
@@ -219,7 +221,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	/**
 	 * Sends a PacketOut to the switch containing an LLDP message to each of the switch ports in an attempt to alert directly connected switches of its presence 
 	 */
-	public void discover(){
+	public synchronized void discover(){
 		for(OFPhysicalPort ofp : featureReply.getPorts()){
 			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
 			OFActionOutput action = new OFActionOutput();
@@ -341,8 +343,19 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    			//Any other case
 	    			else {
 	    				
+	    				
+	    				
 	    				if(msg.getType() == OFType.PACKET_IN){
-	    					topo.learn(msg, this);
+	    					
+	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
+	    					
+	    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
+	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this);
+	    					}
+	    					else{
+	    						topo.learn(msg, this);
+	    					}
+	    					
 	    				}
 	    				
 	    				
