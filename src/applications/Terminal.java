@@ -2,7 +2,7 @@ package applications;
 
 public class Terminal {
 
-	//Main method
+	//hahanocomment4nick
 	public static void main(String[] args) {
 		
 	}
