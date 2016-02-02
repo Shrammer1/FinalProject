@@ -47,10 +47,10 @@ public class TestApplication {
 			
 			
 			for(RemoteSwitch sw: switches){
+				System.out.println(sw.swAPI.listPorts());
 				sw.swAPI.register(sw.pkhl.getID(), OFType.PACKET_IN);
 				sw.pkhl.start();
 			}
-			
 			
 			
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {

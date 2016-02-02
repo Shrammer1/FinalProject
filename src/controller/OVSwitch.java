@@ -20,6 +20,7 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
+import org.openflow.protocol.OFPhysicalPort.OFPortState;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
@@ -93,6 +94,36 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
+	
+	public String listPorts(){
+		String retval = "";
+		List<OFPhysicalPort> ports = featureReply.getPorts();
+		for(OFPhysicalPort p : ports){
+			String portState = null;
+			
+			if(p.getState() == OFPortState.OFPPS_LINK_DOWN.getValue()){
+				portState = "Link Down";
+			}
+			else if(p.getState() == OFPortState.OFPPS_STP_BLOCK.getValue()){
+				portState = "STP Blocking";
+			}
+			else if(p.getState() == OFPortState.OFPPS_STP_FORWARD.getValue()){
+				portState = "STP Forwarding";
+			}
+			else if(p.getState() == OFPortState.OFPPS_STP_LEARN.getValue()){
+				portState = "STP Learning";
+			}
+			else if(p.getState() == OFPortState.OFPPS_STP_LISTEN.getValue()){
+				portState = "STP Listening";
+			}
+			else if(p.getState() == OFPortState.OFPPS_STP_MASK.getValue()){
+				portState = "Masking STP";
+			}
+			
+			retval = retval + "Port name: " + p.getName() + " - " + "ID:" + p.getPortNumber() + " - " + "State: " + portState + "\n";
+		}
+		return retval;
+	}
 	
 	public int getSwitchTimeout() {
 		return switchTimeout;
