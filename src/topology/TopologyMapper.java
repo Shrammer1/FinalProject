@@ -4,11 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-
-import org.openflow.protocol.OFMatch;
-import org.openflow.protocol.OFMessage;
-import org.openflow.protocol.OFPacketIn;
-
 import controller.OVSwitch;
 
 public class TopologyMapper implements Runnable{
@@ -19,6 +14,7 @@ public class TopologyMapper implements Runnable{
 	private String threadName;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
 	private ArrayList<MacEntry> macTable = new ArrayList<MacEntry>();
+	//private ArrayList<TransitLink> links = new ArrayList<TransitLink>();
 	
 	public TopologyMapper(String name,ArrayList<OVSwitch> switches) {
 		this.switches = switches;
@@ -60,17 +56,16 @@ public class TopologyMapper implements Runnable{
       }
    }	
 	
-	public synchronized void learn(OFMessage msg, OVSwitch sw){
-		OFMatch pkt = new OFMatch(); 
-		pkt.loadFromPacket(((OFPacketIn)msg).getPacketData(),((OFPacketIn)msg).getInPort());
-		MacEntry me = new MacEntry(pkt.getDataLayerSource(),pkt.getInputPort(),sw);
+	public synchronized void learn(byte[] macAddr, short inPort, OVSwitch sw){
+		MacEntry me = new MacEntry(macAddr,inPort,sw);
 		if(!(macTable.contains(me))){
 			macTable.add(me);
 		}
 	}
 
-	public void learn(LLDPMessage lldpMessage, OVSwitch sw) {
+	public void learn(LLDPMessage lldpMessage, OVSwitch sw, short inPort) {
 		//TODO: add code that learns new transit links
+		
 	}
 	
 			

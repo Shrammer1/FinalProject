@@ -1,11 +1,10 @@
 package topology;
 
 import java.nio.ByteBuffer;
-import java.util.zip.CRC32;
+import java.util.ArrayList;
 
 public class LLDPMessage {
 	
-	private byte[] fcs = new byte[4];
 	private byte[] dstMac;
 	private byte[] srcMac;
 	private byte[] ethertype;
@@ -13,10 +12,12 @@ public class LLDPMessage {
 	private byte[] portID;
 	private byte[] ttl;
 	private byte[] eof;
-	private int port;
+	private short port;
 	private String switchID;
+	private ArrayList<byte[]> optionalTLVs;
 	
-	public LLDPMessage(String switchID, int port){
+	
+	public LLDPMessage(String switchID, short port){
 		this.port = port;
 		this.switchID = switchID;
 	}
@@ -26,7 +27,6 @@ public class LLDPMessage {
 	}
 
 	/**
-	 * 
 	 * @return Returns the length of the LLDP message in bytes
 	 */
 	public int length(){
@@ -49,12 +49,32 @@ public class LLDPMessage {
 		msg.get(dstMac, 0, 6);
 		msg.get(srcMac, 0, 6);
 		msg.get(ethertype, 0, 2);
-		chasisID = new TLV(msg).toArray();
+		TLV chasisID = new TLV(msg);
+		TLV portID = new TLV(msg);
+		TLV ttl = new TLV(msg);
+		TLV nextTLV = null;
+		do{
+			nextTLV = new TLV(msg);
+			if(nextTLV.getType() != 0 ){
+				optionalTLVs.add(nextTLV.toArray());
+			}
+		}while(nextTLV.getType() != 0);
+		TLV eof = new TLV(nextTLV);
 		
-		
-		
+		this.chasisID = chasisID.toArray();
+		this.portID = portID.toArray();
+		this.ttl = ttl.toArray();
+		this.eof = eof.toArray();
+		this.switchID = new String(chasisID.getData());
+		this.port = ByteBuffer.wrap(portID.getData()).getShort();
 	}
 	
+	public short getPort(){
+		return port;
+	}
+	public String getSwitchID(){
+		return switchID;
+	}
 	
 	public byte[] getMessage(){
 		
@@ -108,7 +128,7 @@ public class LLDPMessage {
 		
 		
 		TLV chasisID = new TLV((byte) 1,switchID.getBytes());
-		TLV portID = new TLV((byte) 2, ByteBuffer.allocate(4).putInt(port).array());
+		TLV portID = new TLV((byte) 2, ByteBuffer.allocate(2).putShort(port).array());
 		TLV ttl = new TLV((byte) 3,new byte[]{(byte) 0,(byte) 120});
 		
 		this.chasisID = chasisID.toArray();
@@ -154,73 +174,6 @@ public class LLDPMessage {
 		
 		return finalMsg.array();
 	}	
-	
-	private class TLV{
-		private byte[] header = new byte[2];
-		private byte[] data;
-		private int len;
-		
-		/**
-		 * Attempts to load the next TLV from a ByteBuffer. If successful the ByteBuffers position will be updated to the end of the TLV. If not the ByteBuffer will remain unchanged. 
-		 * @param buffer The ByteBuffer to load from
-		 * @return The TLV object
-		 */
-		public TLV(ByteBuffer buffer){
-			
-			
-			
-		}
-		
-		
-		
-		public TLV(byte type, byte[] data){
-			this.data = data;
-			len = data.length;
-			if(len>511 || type > 127 || type < 0 ){
-				throw new IllegalArgumentException();
-				
-			}
-			if(len > 255){
-				header[0] = (byte) ((byte) (type << 1) | (byte) (1 & 0x01));
-				header[1] = (byte) (((byte)len) & 0xff);
-			}
-			else{
-				header[0] = (byte) ((byte) (type << 1));
-				header[1] = (byte) (((byte)len) & 0xff);
-			}
-		}
-		
-		public TLV(byte type) {
-			len = 0;
-			if(len>511 || type > 127 || type < 0 ){
-				throw new IllegalArgumentException();
-				
-			}
-			if(len > 255){
-				header[0] = (byte) ((byte) (type << 1) | (byte) (1 & 0x01));
-				header[1] = (byte) (((byte)len) & 0xff);
-			}
-			else{
-				header[0] = (byte) ((byte) (type << 1));
-				header[1] = (byte) (((byte)len) & 0xff);
-			}
-		}
-
-		public byte[] toArray(){
-			ByteBuffer res = null;
-			if(data==null){
-				res = ByteBuffer.allocate(header.length);
-				res.put(header);
-			}
-			else{
-				res = ByteBuffer.allocate(header.length + data.length);
-				res.put(header);
-				res.put(data);
-			}
-			return res.array();
-		}
-		
-	}
-	
-	
 }
+	
+	

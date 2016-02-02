@@ -350,10 +350,10 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
 	    					
 	    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
-	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this);
+	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
 	    					}
 	    					else{
-	    						topo.learn(msg, this);
+	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(),((OFPacketIn)msg).getInPort(), this);
 	    					}
 	    					
 	    				}
