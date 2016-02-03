@@ -12,8 +12,11 @@ import java.util.logging.Level;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
+import org.openflow.protocol.OFHello;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
+import org.openflow.protocol.hello.OFHelloElement;
+import org.openflow.protocol.hello.OFHelloElementVersionBitmap;
 
 import api.SwitchHandlerAPI;
 import topology.TopologyMapper;
@@ -287,7 +290,16 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 			 */
 			try {
 				List<OFMessage> l = new ArrayList<OFMessage>();
-				l.add(stream.getMessageFactory().getMessage(OFType.HELLO));
+				OFHello helloMsg = (OFHello) stream.getMessageFactory().getMessage(OFType.HELLO);
+				List<OFHelloElement> helloElements = new ArrayList<OFHelloElement>();
+		        OFHelloElementVersionBitmap hevb = new OFHelloElementVersionBitmap();
+		        List<Integer> bitmaps = new ArrayList<Integer>();
+		        bitmaps.add(0x10);
+		        hevb.setBitmaps(bitmaps);
+		        helloElements.add(hevb);
+		        helloMsg.setHelloElements(helloElements);
+				
+				l.add(helloMsg);
 		        l.add(stream.getMessageFactory().getMessage(OFType.FEATURES_REQUEST));
 		        stream.write(l);
 		        

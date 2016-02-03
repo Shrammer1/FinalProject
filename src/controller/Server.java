@@ -71,7 +71,7 @@ public class Server implements Runnable{
 		    
 		    //Always running and listening for incoming Asynchronous OFMessages
 			while(true){
-				BasicFactory factory = new BasicFactory();
+				BasicFactory factory = BasicFactory.getInstance();
 			    SocketChannel sock = null;
 			    while(sock==null){
 			    	Thread.sleep(0,1);

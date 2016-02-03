@@ -5,6 +5,7 @@ import java.nio.channels.SocketChannel;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,17 +15,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
+import org.openflow.protocol.OFError;
+import org.openflow.protocol.OFError.OFErrorType;
 import org.openflow.protocol.OFFeaturesReply;
+import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
+import org.openflow.protocol.OFPort;
+import org.openflow.protocol.OFStatisticsReply;
+import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.OFPhysicalPort.OFPortState;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
+import org.openflow.protocol.instruction.OFInstruction;
+import org.openflow.protocol.instruction.OFInstructionApplyActions;
+import org.openflow.protocol.statistics.OFPortDescription;
+import org.openflow.protocol.statistics.OFStatistics;
+import org.openflow.protocol.statistics.OFStatisticsType;
+
 import api.OVSwitchAPI;
 import topology.LLDPMessage;
 import topology.TopologyMapper;
@@ -56,7 +69,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	private PacketHandler pkhl;
 	private String threadName;
 	private OFMessageAsyncStream stream;
-	private BasicFactory factory = new BasicFactory();
+	private BasicFactory factory = BasicFactory.getInstance();
 	private List<OFMessage> l = new ArrayList<OFMessage>();
 	private List<OFMessage> msgIn = new ArrayList<OFMessage>();
 	private StreamHandler sthl;
@@ -67,6 +80,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	private String nickname = "";
 	private Map<String,Registration> registrations = new HashMap<String,Registration>();
 	private int switchTimeout;
+	private ArrayList<OFPhysicalPort> ports = new ArrayList<OFPhysicalPort>();
 	
 	/**************************************************
 	 * PUBLIC VARIABLES
@@ -97,29 +111,8 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	
 	public String listPorts(){
 		String retval = "";
-		List<OFPhysicalPort> ports = featureReply.getPorts();
 		for(OFPhysicalPort p : ports){
-			String portState = null;
-			
-			if(p.getState() == OFPortState.OFPPS_LINK_DOWN.getValue()){
-				portState = "Link Down";
-			}
-			else if(p.getState() == OFPortState.OFPPS_STP_BLOCK.getValue()){
-				portState = "STP Blocking";
-			}
-			else if(p.getState() == OFPortState.OFPPS_STP_FORWARD.getValue()){
-				portState = "STP Forwarding";
-			}
-			else if(p.getState() == OFPortState.OFPPS_STP_LEARN.getValue()){
-				portState = "STP Learning";
-			}
-			else if(p.getState() == OFPortState.OFPPS_STP_LISTEN.getValue()){
-				portState = "STP Listening";
-			}
-			else if(p.getState() == OFPortState.OFPPS_STP_MASK.getValue()){
-				portState = "Masking STP";
-			}
-			
+			String portState = OFPortState.valueOf(p.getState()).toString();
 			retval = retval + "Port name: " + p.getName() + " - " + "ID:" + p.getPortNumber() + " - " + "State: " + portState + "\n";
 		}
 		return retval;
@@ -252,8 +245,9 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	/**
 	 * Sends a PacketOut to the switch containing an LLDP message to each of the switch ports in an attempt to alert directly connected switches of its presence 
 	 */
+	
 	public synchronized void discover(){
-		for(OFPhysicalPort ofp : featureReply.getPorts()){
+		for(OFPhysicalPort ofp : ports){
 			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
 			OFActionOutput action = new OFActionOutput();
             action.setMaxLength((short) 0);
@@ -284,8 +278,35 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	
 	@Override
 	public void run(){
+		
+		
 		//Creating/Instantiating a new StreamHandler Object
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
+		
+		
+		//As of OpenFlow 1.3 a default flow must be sent to the switches to direct non-matching traffic to the controller:
+		//Clear all existing rules
+		OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
+        fm.setCommand(OFFlowMod.OFPFC_DELETE);
+        sthl.sendMsg(fm);
+        //Install default rule required by OF1.3
+        fm.setCommand(OFFlowMod.OFPFC_ADD);
+        fm.setPriority((short) 0);
+        OFActionOutput action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER); 
+        fm.setInstructions(Collections.singletonList((OFInstruction)new OFInstructionApplyActions().setActions(Collections.singletonList((OFAction)action))));
+        sthl.sendMsg(fm);
+        
+        
+        //Since OpenFlow 1.3 doesnt give a list of ports in the features reply (why would they do this...?) we have to query the switch for the ports
+        OFStatisticsRequest omr = (OFStatisticsRequest) factory.getMessage(OFType.STATS_REQUEST);
+        omr.setStatisticsType(OFStatisticsType.DESC);
+        sthl.sendMsg(omr);
+        omr = (OFStatisticsRequest) factory.getMessage(OFType.STATS_REQUEST);
+        omr.setStatisticsType(OFStatisticsType.PORT_DESC);
+        sthl.sendMsg(omr);
+        
+        
+		
 		
 		/*
 		 * Evaluating if Layer 2 functionality should be used and sending its
@@ -387,6 +408,18 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(),((OFPacketIn)msg).getInPort(), this);
 	    					}
 	    					
+	    				}
+	    				else if(msg.getType() == OFType.STATS_REPLY){
+	    					if(((OFStatisticsReply) msg).getStatisticsType() == OFStatisticsType.PORT_DESC){
+	    						List<? extends OFStatistics> stats = ((OFStatisticsReply) msg).getStatistics();
+	    						for(OFStatistics pStat: stats){
+	    							ports.add(((OFPortDescription) pStat).getPort());
+	    						}
+	    					}
+	    				}
+	    				else if(msg.getType() == OFType.ERROR){
+							OFError err = ((OFError) msg);
+							System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
 	    				

@@ -41,6 +41,7 @@ public class StreamHandler implements Runnable{
 			synchronized (stream) 
 			{
 				//Buffers a single OFMessage
+				msg.computeLength();
 				stream.write(msg);
 				//Wakes up all threads that are waiting on this object's monitor.
 				stream.notifyAll(); 
@@ -55,6 +56,9 @@ public class StreamHandler implements Runnable{
 		try {
 			synchronized (stream) 
 			{
+				for(OFMessage msg:l){
+					msg.computeLength();
+				}
 				//Buffers a list of OFMessages
 				stream.write(l);
 				//Wakes up all threads that are waiting on this object's monitor.

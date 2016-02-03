@@ -14,7 +14,7 @@ public class TopologyMapper implements Runnable{
 	private String threadName;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
 	private ArrayList<MacEntry> macTable = new ArrayList<MacEntry>();
-	//private ArrayList<TransitLink> links = new ArrayList<TransitLink>();
+	private LinkTable links = new LinkTable();
 	
 	public TopologyMapper(String name,ArrayList<OVSwitch> switches) {
 		this.switches = switches;
@@ -56,16 +56,15 @@ public class TopologyMapper implements Runnable{
       }
    }	
 	
-	public synchronized void learn(byte[] macAddr, short inPort, OVSwitch sw){
+	public synchronized void learn(byte[] macAddr, int inPort, OVSwitch sw){
 		MacEntry me = new MacEntry(macAddr,inPort,sw);
 		if(!(macTable.contains(me))){
 			macTable.add(me);
 		}
 	}
 
-	public void learn(LLDPMessage lldpMessage, OVSwitch sw, short inPort) {
+	public void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
 		//TODO: add code that learns new transit links
-		
 	}
 	
 			
@@ -109,14 +108,14 @@ public class TopologyMapper implements Runnable{
 		}
 
 		private byte[] mac;
-		private short port;
+		private int port;
 		private OVSwitch sw;
 		
 		
 		
-		public MacEntry(byte[] mac, short port, OVSwitch sw){
+		public MacEntry(byte[] mac, int inPort, OVSwitch sw){
 			this.mac = mac;
-			this.port = port;
+			this.port = inPort;
 			this.sw = sw;
 			
 		}

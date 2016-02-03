@@ -12,13 +12,13 @@ public class LLDPMessage {
 	private byte[] portID;
 	private byte[] ttl;
 	private byte[] eof;
-	private short port;
+	private int port;
 	private String switchID;
 	private ArrayList<byte[]> optionalTLVs;
 	
 	
-	public LLDPMessage(String switchID, short port){
-		this.port = port;
+	public LLDPMessage(String switchID, int i){
+		this.port = i;
 		this.switchID = switchID;
 	}
 	
@@ -69,7 +69,7 @@ public class LLDPMessage {
 		this.port = ByteBuffer.wrap(portID.getData()).getShort();
 	}
 	
-	public short getPort(){
+	public int getPort(){
 		return port;
 	}
 	public String getSwitchID(){
@@ -128,7 +128,7 @@ public class LLDPMessage {
 		
 		
 		TLV chasisID = new TLV((byte) 1,switchID.getBytes());
-		TLV portID = new TLV((byte) 2, ByteBuffer.allocate(2).putShort(port).array());
+		TLV portID = new TLV((byte) 2, ByteBuffer.allocate(4).putInt(port).array());
 		TLV ttl = new TLV((byte) 3,new byte[]{(byte) 0,(byte) 120});
 		
 		this.chasisID = chasisID.toArray();

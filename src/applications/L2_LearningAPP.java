@@ -16,6 +16,8 @@ import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
+import org.openflow.protocol.instruction.OFInstruction;
+import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.util.LRULinkedHashMap;
 import org.openflow.util.U16;
 import api.OVSwitchAPI;
@@ -93,11 +95,7 @@ public class L2_LearningAPP {
 		private Thread t;
 		private OVSwitchAPI swAPI;
 		
-		/*
-		 * A basic OpenFlow factory that supports naive creation of both Messages 
-		 * and Actions/Instructions.
-		 */
-		private BasicFactory factory = new BasicFactory();
+		BasicFactory factory = BasicFactory.getInstance();
 		private List<OFMessage> l = new ArrayList<OFMessage>();
 		private String id;
 
@@ -159,7 +157,7 @@ public class L2_LearningAPP {
 	         */
 	        if ((dlSrc[0] & 0x1) == 0) {
 	            if (!macTable.containsKey(dlSrcKey) || !macTable.get(dlSrcKey).equals(pi.getInPort())) {
-	                macTable.put(dlSrcKey, pi.getInPort());
+	                macTable.put(dlSrcKey, (short) pi.getInPort());
 	            }
 	        }
 	        
@@ -177,37 +175,36 @@ public class L2_LearningAPP {
 	         * STEP_3_A: If the output port is known, create and push a FlowMod
 	         */
 	        if (outPort != null) {
-	            /*
-	             * Retrieves an OFMessage instance corresponding to the specified 
-	             * OFType.
-	             */
+	        	//Retrieves an OFMessage instance corresponding to the specified OFType
 	        	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
 	            fm.setBufferId(bufferId);
-	            fm.setCommand((short) 0);
+	            fm.setCommand(OFFlowMod.OFPFC_ADD);
 	            fm.setCookie(0);
 	            fm.setFlags((short) 0);
 	            fm.setHardTimeout((short) 0);
 	            fm.setIdleTimeout((short) 5);
 	            
-	            match.setInputPort(pi.getInPort());
-	            match.setWildcards(OFMatch.OFPFW_DL_TYPE + OFMatch.OFPFW_DL_VLAN_PCP + OFMatch.OFPFW_DL_VLAN);
+	           
+	            
+	            match.setInPort(pi.getInPort());
 	            match.setDataLayerDestination(pktIn.getDataLayerDestination());
 	            match.setDataLayerSource(pktIn.getDataLayerSource());
-	                  	                
 	            fm.setMatch(match);
-	            fm.setOutPort((short) OFPort.OFPP_NONE.getValue());
+	            
 	            fm.setPriority((short) 0);
 	            OFActionOutput action = new OFActionOutput();
 	            action.setMaxLength((short) 0);
 	            action.setPort(outPort);
-	            
 	            List<OFAction> actions = new ArrayList<OFAction>();
 	            actions.add(action);
-	            fm.setActions(actions);
-	            /*
-	             * Setting header
-	             */
-	            fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
+	            
+	            //OpenFlow 1.3 no longer sends instructions directly in the flow mod. Now instructions are used to specify what to do with a packet that matches a flow. One of the options is to follow a list of actions, which is what we're doing here.
+	            //Fow more see OpenFlow spec 1.3 page 47
+	            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+	            OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+	            instructions.add(instruction);
+	            
+	            fm.setInstructions(instructions);
 	            ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
 	            fm.writeTo(toData);
 				byte[] msgData = new byte[fm.getLengthU()];
@@ -265,37 +262,34 @@ public class L2_LearningAPP {
 		 * @throws RemoteException 
 		 **************************************************/
 		
-		/*
-		 * Sends a flow mod that drops all packets 
-		 */
-		@SuppressWarnings("unused")
+		//Sends a flow mod that drops all packets
 		public void dropAll() throws RemoteException{
 		
+			
 			OFMatch match = new OFMatch();
-			/*
-	         * Retrieves an OFMessage instance corresponding to the specified 
-	         * OFType.
-	         */
+			//Retrieves an OFMessage instance corresponding to the specified OFType
 			OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
-	        fm.setCommand((short) 0);
+	        fm.setCommand((byte) 0);
 	        fm.setCookie(0);
 	        fm.setHardTimeout((short) 0);
 	        
-	        /*
-	         * Matching all coming in from that port
-	         */
-	        match.setInputPort(OFPort.OFPP_NONE.getValue());
+	        //Matching all coming in from that port
+	        match.setInPort(OFPort.OFPP_ANY.getValue());
 	        	                
 	        fm.setMatch(match);
-	        fm.setOutPort((short) OFPort.OFPP_NONE.getValue());
+	        fm.setOutPort((short) OFPort.OFPP_ANY.getValue());
 	        fm.setPriority((short) 0);
 	        OFActionOutput action = new OFActionOutput();
 	        action.setMaxLength((short) 0);
 	        List<OFAction> actions = new ArrayList<OFAction>();
 	        actions.add(action);
-	        fm.setActions(actions);
-	        fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
 	        
+	        List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+	        OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+	        instructions.add(instruction);
+	        
+	        fm.setInstructions(instructions);
+	        fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
 	        
 			ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
 			fm.writeTo(toData);
@@ -308,7 +302,6 @@ public class L2_LearningAPP {
 		@Override
 		public void run(){
 			
-		    BasicFactory factory = new BasicFactory();
 		    while(t.isInterrupted()==false){
 		    	ArrayList<OFMessage> lst = null;
 		    	
