@@ -12,10 +12,14 @@ import java.util.logging.Level;
 
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFFeaturesReply;
+import org.openflow.protocol.OFHello;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFType;
+import org.openflow.protocol.hello.OFHelloElement;
+import org.openflow.protocol.hello.OFHelloElementVersionBitmap;
 
 import api.SwitchHandlerAPI;
+import topology.TopologyMapper;
 
 /**
  * 
@@ -49,6 +53,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	private String threadName;
 	private Thread t;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
+	private TopologyMapper topo;
 	
 	/*
 	 * Remote interface to a simple remote object registry that 
@@ -59,9 +64,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	private Registry reg;
 	private String regName;
 	
-	/*
-	 * boolean variable to control Layer 2 behavior
-	 */
+	//boolean variable to control Layer 2 behavior
 	private boolean l2_learning = false;
 	
 	
@@ -75,6 +78,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		this.reg = reg;
 		this.regName = regName;
 		this.l2_learning = l2_learning;
+		this.topo = new TopologyMapper("TopogoyMapper",switches);
 	}
 	
 	/**************************************************
@@ -99,10 +103,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 			for(int i = 0; i<switches.size();i++){
 				res.add(switches.get(i).getSwitchName());
 			}
-			/*
-			 * Allowing those waiting on the object's monitor to continue using
-			 * it.
-			 */
+			//Allowing those waiting on the object's monitor to continue using it
 			switches.notifyAll();
 		}
 		return res;
@@ -131,7 +132,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	public synchronized void addSwitch(SocketChannel sock, OFMessageAsyncStream stream){
 		synchronized (switches) {
 			try {
-				new SwitchSetup(threadName + "_SetupSwitch_" + sock.getRemoteAddress(),threadName,sock, stream, this);
+				new SwitchSetup(threadName + "_SetupSwitch_" + sock.getRemoteAddress(),threadName,sock, stream, topo, this);
 			} catch (IOException e) {
 				LOGGER.log(Level.SEVERE, e.toString());
 			}
@@ -174,9 +175,9 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	}
 	
 	
-	
 	@Override
 	public void run(){
+		topo.start();
 		while(!(t.isInterrupted())){
 			try {
 				Thread.sleep(0, 1);
@@ -188,9 +189,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	}
 	
 	
-	/*
-	 * Method to stop a Thread of a SwitchHandler
-	 */
+	//Method to stop a Thread of a SwitchHandler
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
@@ -240,25 +239,22 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		private SocketChannel sock;
 		private SwitchHandler swhl; 
 		private String swName;
+		private TopologyMapper topo;
 		
-		
-		/*
-		 * Constructor
-		 */
+		//Constructor
 		public SwitchSetup(String name,String swName, SocketChannel sock, 
-				OFMessageAsyncStream stream,SwitchHandler swhl) 
+				OFMessageAsyncStream stream, TopologyMapper topo, SwitchHandler swhl) 
 		{
 			threadName = name;
 			this.stream = stream;
 			this.sock = sock;
 			this.swhl = swhl;
 			this.swName = swName;
+			this.topo = topo;
 			this.start();
 		}	
 		
-		/*
-		 * Method to abort a Thread of Switch Setup
-		 */
+		//Method to abort a Thread of Switch Setup
 		private void abort(){
 			stop();
 		}			
@@ -288,20 +284,26 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		@Override
 		public void run(){
 			OVSwitch sw = null;
-			
 			/*
 			 * Obtains OFMessages and writes them onto the stream of 
 			 * OFMessageAsync.
 			 */
 			try {
 				List<OFMessage> l = new ArrayList<OFMessage>();
-				l.add(stream.getMessageFactory().getMessage(OFType.HELLO));
+				OFHello helloMsg = (OFHello) stream.getMessageFactory().getMessage(OFType.HELLO);
+				List<OFHelloElement> helloElements = new ArrayList<OFHelloElement>();
+		        OFHelloElementVersionBitmap hevb = new OFHelloElementVersionBitmap();
+		        List<Integer> bitmaps = new ArrayList<Integer>();
+		        bitmaps.add(0x10);
+		        hevb.setBitmaps(bitmaps);
+		        helloElements.add(hevb);
+		        helloMsg.setHelloElements(helloElements);
+				
+				l.add(helloMsg);
 		        l.add(stream.getMessageFactory().getMessage(OFType.FEATURES_REQUEST));
 		        stream.write(l);
 		        
-		        /*
-		         * If the stream was used for transfer messages, then clean it
-		         */
+		        //If the stream was used for transfer messages, then clean it
 		        while(stream.needsFlush()){
 		        	stream.flush();
 		        }
@@ -312,14 +314,13 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		         * and initializes it. If it existed before it gets restarted.
 		         */
 		        OFFeaturesReply fr = getFeaturesReply();
-		        sw = swhl.getSwitch(Long.toHexString(fr.getDatapathId()));
+		        sw = swhl.getSwitch("0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()));
 		        if(sw==null){
-		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),
-		        			"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length()) 
-		        			+ Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,swhl.l2_learning);
+		        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,topo,swhl.l2_learning);
 		        }
 		        else{
 		        	sw.restart(sock,stream,fr);
+		        	return;
 		        }
 		        
 			} catch (IOException e) {
@@ -330,9 +331,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	        this.abort();
 		}
 		
-		/*
-		 * Method to stop/interrupt a Thread of SwitchSetup
-		 */
+		//Method to stop/interrupt a Thread of SwitchSetup
 		public void stop(){
 			t.interrupt();
 			LOGGER.info("Stopping " +  threadName);

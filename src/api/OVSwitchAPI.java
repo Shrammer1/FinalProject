@@ -31,4 +31,7 @@ public interface OVSwitchAPI extends Remote {
 	 * @return OFMessage at the front of the queue 
 	 */
 	public byte[] getMessage(String id)throws RemoteException;
+	
+	public String listPorts() throws RemoteException;
+	
 }
