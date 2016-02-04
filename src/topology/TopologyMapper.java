@@ -65,9 +65,6 @@ public class TopologyMapper implements Runnable{
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
-		
-		System.out.println(links.toString());
-		
 		OVSwitch farEnd = null;
 
 		for(OVSwitch s:switches){
@@ -100,11 +97,8 @@ public class TopologyMapper implements Runnable{
 			//the far end has a link. Lets see if the local end has one
 			Link lnk2 = links.getLink(inPort, sw);
 			if(lnk2==null){
-				//we dont know about either switch - port mapping. learn them
-				lnk = new Link();
-				lnk.addSwitch(lldpMessage.getPort(), farEnd);
+				//local doesnt, add it
 				lnk.addSwitch(inPort, sw);
-				links.add(lnk);
 			}
 			else{
 				//if lnk and lnk2 are the same object we already know about this link.
@@ -112,7 +106,6 @@ public class TopologyMapper implements Runnable{
 					return;
 				}
 				else{
-					/*
 					//if lnk and lnk2 are different objects it means that something has changed in the topology from the last time we learned everything
 					links.remove(lnk);
 					links.remove(lnk2);
@@ -123,71 +116,9 @@ public class TopologyMapper implements Runnable{
 						map.getSw().discover();
 					}
 					
-					*/
 				}
 			}
 		}
 		
 	}
-	
-			
-	
-	
-	private class MacEntry{
-		
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + Arrays.hashCode(mac);
-			result = prime * result + port;
-			result = prime * result + ((sw == null) ? 0 : sw.hashCode());
-			return result;
-		}
-
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			MacEntry other = (MacEntry) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (!Arrays.equals(mac, other.mac))
-				return false;
-			if (port != other.port)
-				return false;
-			if (sw == null) {
-				if (other.sw != null)
-					return false;
-			} else if (!sw.equals(other.sw))
-				return false;
-			return true;
-		}
-
-		private byte[] mac;
-		private int port;
-		private OVSwitch sw;
-		
-		
-		
-		public MacEntry(byte[] mac, int inPort, OVSwitch sw){
-			this.mac = mac;
-			this.port = inPort;
-			this.sw = sw;
-			
-		}
-
-
-		private TopologyMapper getOuterType() {
-			return TopologyMapper.this;
-		}
-	}
-
-
 }
