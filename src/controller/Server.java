@@ -16,9 +16,7 @@ import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.factory.BasicFactory;
 
-/*
- * Server runnable class
- */
+//Server runnable class
 public class Server implements Runnable{
 
 	/**************************************************
@@ -29,17 +27,13 @@ public class Server implements Runnable{
 	 */
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
-	/*
-	 * For RMI implementation
-	 */
+	//For RMI implementation
 	private Registry reg;
 	private int port;
 	private Thread t;
 	private String threadName;
 	
-	/*
-	 * boolean variable to control Layer 2 behavior
-	 */
+	//boolean variable to control Layer 2 behavior
 	private boolean l2_learning;
 	
 	
@@ -61,9 +55,7 @@ public class Server implements Runnable{
 	 * PUBLIC METHODS
 	 **************************************************/
 	
-	/*
-	 * Server listens on port 6001
-	 */
+	//Server listens on port 6001
 	@Override
 	public void run(){
 		
@@ -73,15 +65,11 @@ public class Server implements Runnable{
 		    listenSock.socket().bind(new java.net.InetSocketAddress(6001));
 		    listenSock.socket().setReuseAddress(true);
 		    
-		    /*
-		     * Instantiating and Starting the switch handler
-		     */
+		    //Instantiating and Starting the switch handler
 		    SwitchHandler swhl = new SwitchHandler(threadName + "_Main_SwitchHandler",threadName,reg,l2_learning);
 		    swhl.start();
 		    
-		    /*
-		     * Always running and listening for incoming Asynchronous OFMessages
-		     */
+		    //Always running and listening for incoming Asynchronous OFMessages
 			while(true){
 				BasicFactory factory = new BasicFactory();
 			    SocketChannel sock = null;
@@ -90,8 +78,6 @@ public class Server implements Runnable{
 			    	sock = listenSock.accept();
 			    }
 		        swhl.addSwitch(sock,new OFMessageAsyncStream(sock, factory));
-		        
-		        
 			}
 		}
 		catch(Exception e){
@@ -100,22 +86,16 @@ public class Server implements Runnable{
 	}
 	
 	
-	/*
-	 * Method to stop a Thread of a Server
-	 */
+	//Method to stop a Thread of a Server
 	public void stop(){
 		t.interrupt();
 	}
 	
-	/*
-	 * Method to start a Thread of a Server
-	 */
+	//Method to start a Thread of a Server
 	public void start (){
 		LOGGER.setLevel(Level.FINEST);
 		try {
-			/*
-			 * Creating a file to store logs
-			 */
+			//Creating a file to store logs
 			FileHandler fh = new FileHandler("Logs/OVS-Controller.log");
 			//SimpleFormatter sf = new SimpleFormatter();
 			//fh.setFormatter(sf);
@@ -127,22 +107,16 @@ public class Server implements Runnable{
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		}
-		/*
-		 * Informing that Thread has started. Server Thread ready and listening
-		 */
+		//Informing that Thread has started. Server Thread ready and listening
 		LOGGER.info("Starting " +  threadName);
-		/*
-		 * Part of the RMI implementation on the server
-		 */
+		//Part of the RMI implementation on the server
 		try {
 			reg = LocateRegistry.createRegistry(port);
 			LOGGER.info("RMI Registry created on port: " + port);
 		} catch (RemoteException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		}
-		/*
-		 * If the Thread does not exist, then create one
-		 */
+		//If the Thread does not exist, then create one
 		if (t == null){
 			t = new Thread (this, threadName);
 			t.start();
@@ -156,9 +130,7 @@ public class Server implements Runnable{
 	 */
 	public static void main(String args[]){
 		boolean l2_learning=false;
-		/*
-		 * Parsing CLI arguments 
-		 */
+		//Parsing CLI arguments
 		if(args.length<1){
 			System.err.println(printUsage());
 			System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
@@ -173,14 +145,10 @@ public class Server implements Runnable{
 				System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
 			}
 		}
-		/*
-		 * Port 1099 for RMI registry functionality
-		 */
+		//Port 1099 for RMI registry functionality
 		Server srv = new Server(args[0], 1099,l2_learning);
 		
-		/*
-		 * Starting a Server Thread
-		 */
+		//Starting a Server Thread
 		srv.start();
 		
 		
@@ -197,9 +165,8 @@ public class Server implements Runnable{
 	/**************************************************
 	 * PRIVATE CLASS
 	 **************************************************/
-	/*
-	 * Entire private class to be used for logs formatting. 
-	 */
+	
+	//Entire private class to be used for logs formatting.
 	private class LogFormatter extends Formatter
 	{
 	    SimpleDateFormat dateFormatter = new SimpleDateFormat ("MM/dd/yy '-' HH:mm:ss a");
@@ -349,4 +316,3 @@ public class Server implements Runnable{
 		}
 	}
 	*/
-

@@ -7,9 +7,7 @@ import java.util.logging.Logger;
 import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFMessage;
 
-/*
- * StreamHandler Class (Runnable)
- */
+//StreamHandler Class (Runnable)
 public class StreamHandler implements Runnable{
 	
 	/**************************************************
@@ -37,9 +35,7 @@ public class StreamHandler implements Runnable{
 		stream = strm;
 	}
 	
-	/*
-	 * Method to send a single OFMessage
-	 */
+	//Method to send a single OFMessage
 	protected synchronized void sendMsg(OFMessage msg){
 		try {
 			synchronized (stream) 
@@ -54,9 +50,7 @@ public class StreamHandler implements Runnable{
 		}	
 	}
 	
-	/*
-	 * Method to send a group of OFMessages
-	 */
+	//Method to send a group of OFMessages
 	protected synchronized void sendMsg(List<OFMessage> l){
 		try {
 			synchronized (stream) 
@@ -95,17 +89,13 @@ public class StreamHandler implements Runnable{
 		}
 	}
 
-	/*
-	 * Method to interrupt a StreamHandler Thread
-	 */
+	//Method to interrupt a StreamHandler Thread
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
 	}
 	
-	/*
-	 * Method to allocate/instantiate a new StreamHandler Thread
-	 */
+	//Method to allocate/instantiate a new StreamHandler Thread
 	public void start (){
       LOGGER.info("Starting " +  threadName);
       if (t == null){
