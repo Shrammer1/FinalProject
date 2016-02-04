@@ -257,7 +257,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	 */
 	
 	public synchronized void discover(){
-		if(!(sthl.isAlive())){return;}
+		if(sthl == null){return;}
 		for(OFPhysicalPort ofp : ports){
 			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
 			OFActionOutput action = new OFActionOutput();

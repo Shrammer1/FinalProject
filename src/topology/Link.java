@@ -19,8 +19,8 @@ public class Link extends ArrayList<SwitchMapping>{
 	}
 	
 	
-	public void addSwitch(int port, OVSwitch sw){
-		this.add(new SwitchMapping(port, sw));
+	public void addSwitch(int port, OVSwitch sw, long ttl){
+		this.add(new SwitchMapping(port, sw, ttl));
 	}
 	
 	public int getPort(OVSwitch sw){

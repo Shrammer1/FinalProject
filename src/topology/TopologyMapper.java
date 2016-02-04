@@ -1,8 +1,8 @@
 package topology;
 
+import java.nio.ByteBuffer;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import controller.OVSwitch;
@@ -14,7 +14,8 @@ public class TopologyMapper implements Runnable{
 	private Thread t;
 	private String threadName;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
-	private ArrayList<MacEntry> macTable = new ArrayList<MacEntry>();
+	private ArrayList<SwitchMapping> macTable = new ArrayList<SwitchMapping>();
+	private HostTable hosts = new HostTable();
 	private LinkTable links = new LinkTable();
 	
 	public TopologyMapper(String name,ArrayList<OVSwitch> switches) {
@@ -29,7 +30,8 @@ public class TopologyMapper implements Runnable{
 		long lastSent = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 		while(!(t.isInterrupted())){
 			try {
-				Thread.sleep(300);
+				Thread.sleep(1000);
+				hosts.cleanDead();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -58,9 +60,14 @@ public class TopologyMapper implements Runnable{
    }	
 	
 	public synchronized void learn(byte[] macAddr, int inPort, OVSwitch sw){
-		MacEntry me = new MacEntry(macAddr,inPort,sw);
+		SwitchMapping me = new SwitchMapping(inPort,sw,macAddr, 300);
 		if(!(macTable.contains(me))){
 			macTable.add(me);
+		}
+		if((links.getLink(inPort, sw)) == null){
+			hosts.add(new SwitchMapping(inPort, sw, macAddr,300));
+			System.out.println(hosts.size());
+			System.out.println(hosts.toString());
 		}
 	}
 
@@ -86,8 +93,8 @@ public class TopologyMapper implements Runnable{
 			if(lnk == null){
 				//neither the current switch nor the originating switch has a link, create a new link and add both of them to it
 				lnk = new Link();
-				lnk.addSwitch(lldpMessage.getPort(), farEnd);
-				lnk.addSwitch(inPort, sw);
+				lnk.addSwitch(lldpMessage.getPort(), farEnd,lldpMessage.getTTL());
+				lnk.addSwitch(inPort, sw,lldpMessage.getTTL());
 				links.add(lnk);
 			}
 			
@@ -98,7 +105,7 @@ public class TopologyMapper implements Runnable{
 			Link lnk2 = links.getLink(inPort, sw);
 			if(lnk2==null){
 				//local doesnt, add it
-				lnk.addSwitch(inPort, sw);
+				lnk.addSwitch(inPort, sw, lldpMessage.getTTL());
 			}
 			else{
 				//if lnk and lnk2 are the same object we already know about this link.
