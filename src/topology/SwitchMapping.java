@@ -1,5 +1,7 @@
 package topology;
 
+import java.rmi.RemoteException;
+
 import controller.OVSwitch;
 
 /**
@@ -15,11 +17,44 @@ public class SwitchMapping{
 		this.sw = sw;
 	}
 	
-	public boolean equals(SwitchMapping map){
-		if(map.port == this.port && map.sw.equals(this.sw)){
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + port;
+		result = prime * result + ((sw == null) ? 0 : sw.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
 			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SwitchMapping other = (SwitchMapping) obj;
+		if (port != other.port)
+			return false;
+		if (sw == null) {
+			if (other.sw != null)
+				return false;
+		} else if (!sw.equals(other.sw))
+			return false;
+		return true;
+	}
+	
+	
+	
+	@Override
+	public String toString() {
+		try {
+			return sw.getSwitchFullName() + ":" + port;
+		} catch (RemoteException e) {
+			//can never occur
 		}
-		return false;
+		return null;
 	}
 
 	public int getPort() {

@@ -128,33 +128,32 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	public int getSwitchTimeout() {
 		return switchTimeout;
 	}
-	
-	public String getSwitchName(){
-		return nickname + "_" + switchID;
-	}
-	
 	public OFFeaturesReply getFeatures(){
 		return featureReply;
-	}
-	
-	public String getSwitchID(){
-		return switchID;
-	}
-	
-	public String getSwitchNickName(){
-		return nickname;
 	}
 	
 	public void setSwitchTimeout(int switchTimeout) {
 		this.switchTimeout = switchTimeout;
 	}
-
-	public void setSwitchNickName(String s){
-		nickname = s;
-	}
 	
 	public void setSwitchID(String l){
 		switchID = l;
+	}
+	
+	public String getSwitchID() throws RemoteException{
+		return switchID;
+	}
+	
+	public String getSwitchFullName() throws RemoteException {
+		return nickname + "_" + switchID;
+	}
+	
+	public String getSwitchNickName() throws RemoteException{
+		return nickname;
+	}
+
+	public void setSwitchNickName(String name) throws RemoteException {
+		this.nickname = name;
 	}
 	
 	

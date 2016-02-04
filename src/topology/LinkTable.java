@@ -17,5 +17,15 @@ public class LinkTable extends ArrayList<Link> {
 		return null;
 	}
 	
+	public String toString(){
+		
+		String retval = "";
+		
+		for(Link l:this){
+			retval = retval + l.toString() + "\n";
+		}
+		
+		return retval;
+	}
 	
 }

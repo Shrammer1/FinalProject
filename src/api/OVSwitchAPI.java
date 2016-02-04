@@ -13,7 +13,10 @@ import org.openflow.protocol.OFType;
  */
 
 public interface OVSwitchAPI extends Remote {
-	public String getSwitchName() throws RemoteException;
+	public String getSwitchID() throws RemoteException;
+	public String getSwitchFullName() throws RemoteException;
+	public String getSwitchNickName() throws RemoteException;
+	public void setSwitchNickName(String name) throws RemoteException;
 	public int getSwitchTimeout()throws RemoteException;
 	public void setSwitchTimeout(int switchTimeout)throws RemoteException;
 	public boolean register(String id, OFType type) throws RemoteException;

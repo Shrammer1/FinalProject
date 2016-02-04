@@ -6,17 +6,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-
 import org.openflow.io.OFMessageAsyncStream;
-import org.openflow.protocol.OFFeaturesReply;
-import org.openflow.protocol.OFHello;
-import org.openflow.protocol.OFMessage;
-import org.openflow.protocol.OFType;
-import org.openflow.protocol.hello.OFHelloElement;
-import org.openflow.protocol.hello.OFHelloElementVersionBitmap;
 
 import api.SwitchHandlerAPI;
 import topology.TopologyMapper;
@@ -105,7 +97,11 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		ArrayList<String> res = new ArrayList<String>();
 		synchronized (switches) {
 			for(int i = 0; i<switches.size();i++){
-				res.add(switches.get(i).getSwitchName());
+				try {
+					res.add(switches.get(i).getSwitchID());
+				} catch (RemoteException e) {
+					LOGGER.log(Level.SEVERE, e.toString());
+				}
 			}
 			//Allowing those waiting on the object's monitor to continue using it
 			switches.notifyAll();
@@ -154,7 +150,7 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 			switches.add(sw);
 			switches.notifyAll();
 			try {
-				reg.rebind(sw.getSwitchName(), sw);
+				reg.rebind(sw.getSwitchID(), sw);
 			} catch (RemoteException e) {
 				LOGGER.log(Level.SEVERE, e.toString());
 			}
@@ -171,7 +167,14 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 		OVSwitch sw = null;
 		synchronized (switches) {
 			for(int i = 0; i<switches.size();i++){
-				if((sw = switches.get(i)).getSwitchID().equals(switchID)) return sw;
+				try {
+					if((sw = switches.get(i)).getSwitchID().equals(switchID)) {
+						switches.notifyAll();
+						return sw;
+					}
+				} catch (RemoteException e) {
+					LOGGER.log(Level.SEVERE, e.toString());
+				}
 			}
 			switches.notifyAll();
 		}

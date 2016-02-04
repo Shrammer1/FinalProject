@@ -1,5 +1,6 @@
 package topology;
 
+import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
@@ -65,12 +66,18 @@ public class TopologyMapper implements Runnable{
 
 	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
 		
+		System.out.println(links.toString());
+		
 		OVSwitch farEnd = null;
 
 		for(OVSwitch s:switches){
-			if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
-				farEnd = s;
-				break;
+			try {
+				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
+					farEnd = s;
+					break;
+				}
+			} catch (RemoteException e) {
+				//can never occur
 			}
 		}
 		
@@ -84,6 +91,7 @@ public class TopologyMapper implements Runnable{
 				lnk = new Link();
 				lnk.addSwitch(lldpMessage.getPort(), farEnd);
 				lnk.addSwitch(inPort, sw);
+				links.add(lnk);
 			}
 			
 			
@@ -96,6 +104,7 @@ public class TopologyMapper implements Runnable{
 				lnk = new Link();
 				lnk.addSwitch(lldpMessage.getPort(), farEnd);
 				lnk.addSwitch(inPort, sw);
+				links.add(lnk);
 			}
 			else{
 				//if lnk and lnk2 are the same object we already know about this link.
@@ -103,6 +112,7 @@ public class TopologyMapper implements Runnable{
 					return;
 				}
 				else{
+					/*
 					//if lnk and lnk2 are different objects it means that something has changed in the topology from the last time we learned everything
 					links.remove(lnk);
 					links.remove(lnk2);
@@ -112,14 +122,12 @@ public class TopologyMapper implements Runnable{
 					for(SwitchMapping map:lnk2){
 						map.getSw().discover();
 					}
+					
+					*/
 				}
 			}
 		}
 		
-		
-		
-		
-		links.add(new Link());
 	}
 	
 			

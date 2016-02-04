@@ -7,7 +7,18 @@ import topology.SwitchMapping;
 public class Link extends ArrayList<SwitchMapping>{
 
 	private static final long serialVersionUID = 4557266269580220297L;
-
+	
+	public String toString(){
+		String retval = "";
+		
+		for(SwitchMapping map:this){
+			retval = retval + map.toString() + " - ";
+		}
+		
+		return retval;
+	}
+	
+	
 	public void addSwitch(int port, OVSwitch sw){
 		this.add(new SwitchMapping(port, sw));
 	}

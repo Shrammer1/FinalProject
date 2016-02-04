@@ -66,7 +66,7 @@ public class LLDPMessage {
 		this.ttl = ttl.toArray();
 		this.eof = eof.toArray();
 		this.switchID = new String(chasisID.getData());
-		this.port = ByteBuffer.wrap(portID.getData()).getShort();
+		this.port = ByteBuffer.wrap(portID.getData()).getInt();
 	}
 	
 	public int getPort(){

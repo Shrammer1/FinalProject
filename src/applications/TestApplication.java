@@ -44,7 +44,7 @@ public class TestApplication {
 				switches.add(new RemoteSwitch(swAPI,new PacketHandler(sw, sw + "sw_pkhl", swAPI)));
 				
 				//gB Testing
-				System.out.println("SW: " + swAPI.getSwitchName() + " t_out: " + swAPI.getSwitchTimeout());
+				System.out.println("SW: " + swAPI.getSwitchID() + " t_out: " + swAPI.getSwitchTimeout());
 			}
 			
 			
