@@ -145,11 +145,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	}
 	
 	public String getSwitchFullName() throws RemoteException {
-<<<<<<< Upstream, based on origin/master
 		return nickname + "_" + switchID;
-=======
-		return switchID + "_" + nickname;
->>>>>>> 2853901 Added some API functionality to support giving switches nicknames.
 	}
 	
 	public String getSwitchNickName() throws RemoteException{
