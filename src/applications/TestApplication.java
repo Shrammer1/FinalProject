@@ -1,3 +1,4 @@
+
 package applications;
 import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
@@ -20,11 +21,12 @@ import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.util.LRULinkedHashMap;
 import org.openflow.util.U16;
+
 import api.OVSwitchAPI;
 import api.SwitchHandlerAPI;
 
 
-public class L2_LearningAPP {
+public class TestApplication {
 	
 	public static void main(String[] args) {
 			
@@ -40,14 +42,17 @@ public class L2_LearningAPP {
 			for(String sw: swLst){
 				OVSwitchAPI swAPI = (OVSwitchAPI) Naming.lookup(serverURL + sw);
 				switches.add(new RemoteSwitch(swAPI,new PacketHandler(sw, sw + "sw_pkhl", swAPI)));
+				
+				//gB Testing
+				System.out.println("SW: " + swAPI.getSwitchName() + " t_out: " + swAPI.getSwitchTimeout());
 			}
 			
 			
 			for(RemoteSwitch sw: switches){
+				System.out.println(sw.swAPI.listPorts());
 				sw.swAPI.register(sw.pkhl.getID(), OFType.PACKET_IN);
 				sw.pkhl.start();
 			}
-			
 			
 			
 		} catch (MalformedURLException | RemoteException | NotBoundException e) {
@@ -88,7 +93,7 @@ public class L2_LearningAPP {
 		 * Switch stays in Fail_Secure mode where it drops all until connected/managed
 		 * by a controller.
 		 */
-		private Map<Integer, Short> macTable;
+		private Map<Integer, Integer> macTable;
 		
 		
 		private String threadName;
@@ -111,7 +116,7 @@ public class L2_LearningAPP {
 			this.threadName = threadname;
 			this.id = id;
 			this.swAPI = swAPI;
-			this.macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+			this.macTable = new LRULinkedHashMap<Integer, Integer>(64001, 64000);
 		}
 		
 		/**************************************************
@@ -157,7 +162,7 @@ public class L2_LearningAPP {
 	         */
 	        if ((dlSrc[0] & 0x1) == 0) {
 	            if (!macTable.containsKey(dlSrcKey) || !macTable.get(dlSrcKey).equals(pi.getInPort())) {
-	                macTable.put(dlSrcKey, (short) pi.getInPort());
+	                macTable.put(dlSrcKey, pi.getInPort());
 	            }
 	        }
 	        
@@ -165,15 +170,13 @@ public class L2_LearningAPP {
 	         *STEP_2: Lookup destination MAC (dlDstKey), if found in macTable set 
 	         *the output port, else output port is NULL. 
 	         */
-	        Short outPort = null;
+	        Integer outPort = null;
 	        // if the destination is not multicast, look it up
 	        if ((dlDst[0] & 0x1) == 0) {
 	            outPort = macTable.get(dlDstKey);
 	        }
 
-	        /*
-	         * STEP_3_A: If the output port is known, create and push a FlowMod
-	         */
+	        //STEP_3_A: If the output port is known, create and push a FlowMod
 	        if (outPort != null) {
 	        	//Retrieves an OFMessage instance corresponding to the specified OFType
 	        	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
@@ -212,36 +215,26 @@ public class L2_LearningAPP {
 				swAPI.sendMsg(msgData);
 	        }
 
-	        /*
-	         * Sending packet out
-	         */
+	        //Sending packet out
 	        if (outPort == null || pi.getBufferId() == 0xffffffff) {
 	            OFPacketOut po = new OFPacketOut();
 	            po.setBufferId(bufferId);
 	            po.setInPort(pi.getInPort());
 
-	            /*
-	             * Setting actions
-	             */
+	            //Setting actions
 	            OFActionOutput action = new OFActionOutput();
 	            action.setMaxLength((short) 0);
-	            /*
-	             * STEP_3_B: If the output port is unknown, flood the packet.
-	             */
+	            //STEP_3_B: If the output port is unknown, flood the packet.
 	            action.setPort((short) ((outPort == null) ? OFPort.OFPP_FLOOD.getValue() : outPort));
 	            List<OFAction> actions = new ArrayList<OFAction>();
 	            actions.add(action);
 	            po.setActions(actions);
 	            po.setActionsLength((short) OFActionOutput.MINIMUM_LENGTH);
 
-	            /*
-	             * Setting data if needed
-	             */
+	            //Setting data if needed
 	            if (bufferId == 0xffffffff) {
 	                byte[] packetData = pi.getPacketData();
-	                /*
-	                 * Setting header
-	                 */
+	                //Setting header
 	                po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH + po.getActionsLength() + packetData.length));
 	                po.setPacketData(packetData);
 	            } else {
@@ -320,27 +313,18 @@ public class L2_LearningAPP {
 						}
 		    		}
 		    	}
-	    		
-		    	
-			    /*
-			     * Clearing the list of OFMessages
-			     */
+			    //Clearing the list of OFMessages
 		    	l.clear();
 		    }
 		}	
 		
-		/*
-		 * Method to interrupt a PacketHandler Thread
-		 */
-		@SuppressWarnings("unused")
+		//Method to interrupt a PacketHandler Thread
 		public void stop(){
 			t.interrupt();
 			System.out.println("Stopping " +  threadName);
 		}
 		
-		/*
-		 * Method to allocate/instantiate a new PacketHandler Thread
-		 */
+		//Method to allocate/instantiate a new PacketHandler Thread
 		public void start (){
 	      System.out.println("Starting " +  threadName);
 	      if (t == null){
@@ -349,7 +333,4 @@ public class L2_LearningAPP {
 	      }
 		}
 	}
-
-	
-	
 }
