@@ -1,10 +1,12 @@
 package controller;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
@@ -157,7 +159,11 @@ public class PacketHandler implements Runnable{
             
             fm.setInstructions(instructions);
 
-            sthl.sendMsg(fm);
+            try {
+				sthl.sendMsg(fm);
+			} catch (IOException e) {
+				LOGGER.log(Level.SEVERE, e.toString());
+			}
         }
 
         //Sending packet out
@@ -185,7 +191,11 @@ public class PacketHandler implements Runnable{
             } else {
                 po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH+ po.getActionsLength()));
             }
-            sthl.sendMsg(po);
+            try {
+				sthl.sendMsg(po);
+			} catch (IOException e) {
+				LOGGER.log(Level.SEVERE, e.toString());
+			}
         }
 	}
 	
@@ -232,7 +242,11 @@ public class PacketHandler implements Runnable{
         
         fm.setInstructions(instructions);
         fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
-        sthl.sendMsg(fm);
+        try {
+			sthl.sendMsg(fm);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.toString());
+		}
 	}
 	
 

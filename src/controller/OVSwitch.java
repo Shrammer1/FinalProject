@@ -108,6 +108,13 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
+	public boolean equals(OVSwitch sw){
+		if(sw.switchID == this.switchID){
+			return true;
+		}
+		return false;
+	}
+	
 	
 	public String listPorts(){
 		String retval = "";
@@ -153,7 +160,11 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	
 	public void sendMsg(byte[] msgs){
 		List<OFMessage> l = factory.parseMessages(ByteBuffer.wrap(msgs));
-		sthl.sendMsg(l);
+		try {
+			sthl.sendMsg(l);
+		} catch (IOException e) {
+			LOGGER.log(Level.SEVERE, e.toString());
+		}
 	}
 	
 	public Queue<byte[]> getMessages(String id){
@@ -247,6 +258,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	 */
 	
 	public synchronized void discover(){
+		if(!(sthl.isAlive())){return;}
 		for(OFPhysicalPort ofp : ports){
 			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
 			OFActionOutput action = new OFActionOutput();
@@ -255,7 +267,11 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
             List<OFAction> actions = new ArrayList<OFAction>();
             actions.add(action);
             OFPacketOut pkOut = new OFPacketOut(msg.getMessage(), actions , 0xffffffff);
-			sthl.sendMsg(pkOut);
+			try {
+				sthl.sendMsg(pkOut);
+			} catch (IOException e) {
+				LOGGER.log(Level.SEVERE, e.toString());
+			}
 		}
 		
 	}
@@ -288,22 +304,38 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		//Clear all existing rules
 		OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
         fm.setCommand(OFFlowMod.OFPFC_DELETE);
-        sthl.sendMsg(fm);
+        try {
+			sthl.sendMsg(fm);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
         //Install default rule required by OF1.3
         fm.setCommand(OFFlowMod.OFPFC_ADD);
         fm.setPriority((short) 0);
         OFActionOutput action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER); 
         fm.setInstructions(Collections.singletonList((OFInstruction)new OFInstructionApplyActions().setActions(Collections.singletonList((OFAction)action))));
-        sthl.sendMsg(fm);
+        try {
+			sthl.sendMsg(fm);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
         
         
         //Since OpenFlow 1.3 doesnt give a list of ports in the features reply (why would they do this...?) we have to query the switch for the ports
         OFStatisticsRequest omr = (OFStatisticsRequest) factory.getMessage(OFType.STATS_REQUEST);
         omr.setStatisticsType(OFStatisticsType.DESC);
-        sthl.sendMsg(omr);
+        try {
+			sthl.sendMsg(omr);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
         omr = (OFStatisticsRequest) factory.getMessage(OFType.STATS_REQUEST);
         omr.setStatisticsType(OFStatisticsType.PORT_DESC);
-        sthl.sendMsg(omr);
+        try {
+			sthl.sendMsg(omr);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
         
         
 		

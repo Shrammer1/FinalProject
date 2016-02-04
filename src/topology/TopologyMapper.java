@@ -63,8 +63,63 @@ public class TopologyMapper implements Runnable{
 		}
 	}
 
-	public void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
-		//TODO: add code that learns new transit links
+	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
+		
+		OVSwitch farEnd = null;
+
+		for(OVSwitch s:switches){
+			if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
+				farEnd = s;
+				break;
+			}
+		}
+		
+		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);
+		
+		if(lnk==null){
+			//the originating switch doesn't have a link object associated to it. Lets see if the recieving switch has one
+			lnk = links.getLink(inPort, sw);
+			if(lnk == null){
+				//neither the current switch nor the originating switch has a link, create a new link and add both of them to it
+				lnk = new Link();
+				lnk.addSwitch(lldpMessage.getPort(), farEnd);
+				lnk.addSwitch(inPort, sw);
+			}
+			
+			
+		}
+		else{
+			//the far end has a link. Lets see if the local end has one
+			Link lnk2 = links.getLink(inPort, sw);
+			if(lnk2==null){
+				//we dont know about either switch - port mapping. learn them
+				lnk = new Link();
+				lnk.addSwitch(lldpMessage.getPort(), farEnd);
+				lnk.addSwitch(inPort, sw);
+			}
+			else{
+				//if lnk and lnk2 are the same object we already know about this link.
+				if(lnk.equals(lnk2)){
+					return;
+				}
+				else{
+					//if lnk and lnk2 are different objects it means that something has changed in the topology from the last time we learned everything
+					links.remove(lnk);
+					links.remove(lnk2);
+					for(SwitchMapping map:lnk){
+						map.getSw().discover();
+					}
+					for(SwitchMapping map:lnk2){
+						map.getSw().discover();
+					}
+				}
+			}
+		}
+		
+		
+		
+		
+		links.add(new Link());
 	}
 	
 			

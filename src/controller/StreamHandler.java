@@ -36,38 +36,35 @@ public class StreamHandler implements Runnable{
 	}
 	
 	//Method to send a single OFMessage
-	protected synchronized void sendMsg(OFMessage msg){
-		try {
-			synchronized (stream) 
-			{
-				//Buffers a single OFMessage
-				msg.computeLength();
-				stream.write(msg);
-				//Wakes up all threads that are waiting on this object's monitor.
-				stream.notifyAll(); 
-			}
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.toString());
-		}	
+	protected synchronized void sendMsg(OFMessage msg) throws IOException {
+		synchronized (stream) 
+		{
+			//Buffers a single OFMessage
+			msg.computeLength();
+			stream.write(msg);
+			//Wakes up all threads that are waiting on this object's monitor.
+			stream.notifyAll(); 
+		}
 	}
 	
 	//Method to send a group of OFMessages
-	protected synchronized void sendMsg(List<OFMessage> l){
-		try {
-			synchronized (stream) 
-			{
-				for(OFMessage msg:l){
-					msg.computeLength();
-				}
-				//Buffers a list of OFMessages
-				stream.write(l);
-				//Wakes up all threads that are waiting on this object's monitor.
-				stream.notifyAll();
+	protected synchronized void sendMsg(List<OFMessage> l) throws IOException{
+		
+		synchronized (stream) 
+		{
+			for(OFMessage msg:l){
+				msg.computeLength();
 			}
-				
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.toString());
-		}	
+			//Buffers a list of OFMessages
+			stream.write(l);
+			//Wakes up all threads that are waiting on this object's monitor.
+			stream.notifyAll();
+		}
+			
+	}
+	
+	public boolean isAlive(){
+		return t.isAlive();
 	}
 	
 	
