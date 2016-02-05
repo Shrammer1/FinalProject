@@ -1,6 +1,8 @@
 package topology;
 
 import java.util.ArrayList;
+import java.util.Iterator;
+
 import controller.OVSwitch;
 import topology.SwitchMapping;
 
@@ -18,7 +20,7 @@ public class Link extends ArrayList<SwitchMapping>{
 		return retval;
 	}
 	
-	
+		
 	public void addSwitch(int port, OVSwitch sw, long ttl){
 		this.add(new SwitchMapping(port, sw, ttl));
 	}
@@ -31,6 +33,25 @@ public class Link extends ArrayList<SwitchMapping>{
 		}
 		return -1;
 	}
-	
+
+	public void cleanDead() {
+		synchronized (this) {
+			Iterator<SwitchMapping> i = this.iterator();
+			while(i.hasNext()){
+				if(!(i.next().isValid())){
+					i.remove();
+				}
+			}
+			this.notifyAll();
+		}
+	}
+
+	public boolean isValid() {
+		if(super.size()==0){
+			return false;
+		}
+		this.cleanDead();
+		return true;
+	}
 	
 }

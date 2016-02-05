@@ -294,6 +294,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	@Override
 	public void run(){
 		
+		boolean flag = false;
 		
 		//Creating/Instantiating a new StreamHandler Object
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
@@ -433,6 +434,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
 	    					
 	    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
+	    						flag = true;
 	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
 	    					}
 	    					else{
@@ -453,18 +455,21 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 							System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
-	    				
-	    				//Evaluate if Layer 2 functionality is enabled and act upon it
-	    				if(l2_learning){
-	    					//Add the message to the packet handler and activate a Thread for processing
-	    					pkhl.addPacket(msg);
-	    					pkhl.wakeUp();
-	    				}
-	    				else{
-	    					for(Map.Entry<String,Registration> r: registrations.entrySet()){
+	    				if(flag = false){
+		    				//Evaluate if Layer 2 functionality is enabled and act upon it
+		    				if(l2_learning){
+		    					//Add the message to the packet handler and activate a Thread for processing
+		    					pkhl.addPacket(msg);
+		    					pkhl.wakeUp();
+		    				}
+		    				//TODO: come up with a way to let apps register and hear about PacketINs containing LLDP messages (should we even let this happen?)
+		    				for(Map.Entry<String,Registration> r: registrations.entrySet()){
 	    						r.getValue().addMsg(msg);
 	    					}
-	    				}	
+	    				}
+	    				else{
+	    					flag = false;
+	    				}
 	    			}
     	        }
             }

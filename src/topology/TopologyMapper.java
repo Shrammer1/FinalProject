@@ -32,6 +32,7 @@ public class TopologyMapper implements Runnable{
 			try {
 				Thread.sleep(1000);
 				hosts.cleanDead();
+				links.cleanDead();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -66,14 +67,14 @@ public class TopologyMapper implements Runnable{
 		}
 		if((links.getLink(inPort, sw)) == null){
 			hosts.add(new SwitchMapping(inPort, sw, macAddr,300));
-			System.out.println(hosts.size());
-			System.out.println(hosts.toString());
+			//System.out.println(hosts.size());
+			//System.out.println(hosts.toString());
 		}
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
 		OVSwitch farEnd = null;
-
+		//System.out.println(links.toString());
 		for(OVSwitch s:switches){
 			try {
 				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
@@ -85,7 +86,7 @@ public class TopologyMapper implements Runnable{
 			}
 		}
 		
-		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);
+ 		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);
 		
 		if(lnk==null){
 			//the originating switch doesn't have a link object associated to it. Lets see if the recieving switch has one
@@ -96,6 +97,9 @@ public class TopologyMapper implements Runnable{
 				lnk.addSwitch(lldpMessage.getPort(), farEnd,lldpMessage.getTTL());
 				lnk.addSwitch(inPort, sw,lldpMessage.getTTL());
 				links.add(lnk);
+			}
+			else{
+				lnk.addSwitch(lldpMessage.getPort(), farEnd,lldpMessage.getTTL());
 			}
 			
 			

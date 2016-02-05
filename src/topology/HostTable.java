@@ -23,7 +23,8 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		for(SwitchMapping map:this){
 			for(byte[] mac:map.getMacs()){
 				try {
-					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
+					//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
+					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(mac) + "\n";
 				} catch (RemoteException e) {
 					//will never happen
 				}
@@ -31,6 +32,18 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		}
 		return retval;
 	}
+	
+	
+	private String bytesToString(byte[] mac){
+		StringBuilder sb = new StringBuilder(18);
+	    for (byte b : mac) {
+	        if (sb.length() > 0)
+	            sb.append(':');
+	        sb.append(String.format("%02x", b));
+	    }
+	    return sb.toString();
+	}
+	
 	
 	public synchronized boolean add(SwitchMapping map){
 		synchronized (this) {
