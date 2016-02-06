@@ -438,7 +438,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
 	    					}
 	    					else{
-	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(),((OFPacketIn)msg).getInPort(), this);
+	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
 	    					}
 	    					
 	    				}
@@ -455,7 +455,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 							System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
-	    				if(flag = false){
+	    				if(flag == false){
 		    				//Evaluate if Layer 2 functionality is enabled and act upon it
 		    				if(l2_learning){
 		    					//Add the message to the packet handler and activate a Thread for processing

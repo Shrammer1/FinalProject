@@ -73,7 +73,8 @@ public class LLDPMessage {
 	}
 	
 	public short getTTL(){
-		return ByteBuffer.wrap(ttl).getShort();
+		TLV ttl = new TLV(ByteBuffer.wrap(this.ttl));
+		return ByteBuffer.wrap(ttl.getData()).getShort();
 	}
 	
 	public int getPort(){

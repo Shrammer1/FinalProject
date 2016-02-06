@@ -13,9 +13,9 @@ import controller.OVSwitch;
 public class SwitchMapping{
 	private int port;
 	private OVSwitch sw;
-	private ArrayList<byte[]> macs = new ArrayList<byte[]>();
-	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());;
+	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	private long ttl;
+	private ArrayList<HostMapping> hosts = new ArrayList<HostMapping>();
 	
 	public SwitchMapping(int port, OVSwitch sw){
 		this.port = port;
@@ -28,11 +28,11 @@ public class SwitchMapping{
 		this.sw = sw;
 		this.ttl = ttl;
 	}
-	public SwitchMapping(int port, OVSwitch sw,byte[] mac, long ttl){
+	public SwitchMapping(int port, OVSwitch sw,byte[] mac, int ip, long ttl){
 		this.port = port;
 		this.sw = sw;
-		this.macs.add(mac);
-		this.ttl = ttl;
+		this.ttl = ttl * 3;
+		hosts.add(new HostMapping(mac,ip,ttl));
 	}
 	
 	public long getTimeAlive(){
@@ -40,24 +40,58 @@ public class SwitchMapping{
 	}
 	
 	public boolean isValid(){
+		ArrayList<HostMapping> tmp = new ArrayList<HostMapping>();
+		for(HostMapping h:tmp){
+			if(!(h.isValid())){
+				hosts.remove(h);
+			}
+		}
 		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > ttl){
 			return false;
 		}
 		return true;
 	}
 	
-	
-	
-	public void addMac(byte[] mac){
-		macs.add(mac);
+	//TODO: make this a public static class/method
+	private String bytesToString(byte[] mac){
+		StringBuilder sb = new StringBuilder(18);
+	    for (byte b : mac) {
+	        if (sb.length() > 0)
+	            sb.append(':');
+	        sb.append(String.format("%02x", b));
+	    }
+	    return sb.toString();
 	}
 	
-	public void delMac(byte mac[]){
-		macs.remove(mac);
+	public void updateHosts(ArrayList<HostMapping> hosts){
+		for(HostMapping h1: hosts){
+			for(HostMapping h2: this.hosts){
+				if(h1.equals(h2)){
+					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+					h1.update(h2);
+				}
+			}
+		}
 	}
 	
-	public ArrayList<byte[]> getMacs(){
-		return macs;
+	
+	public void addHost(byte[] mac, int ip, long ttl){
+		created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+		hosts.add(new HostMapping(mac, ip,ttl));
+	}
+	
+	public void delHost(byte[] mac, int ip){
+		HostMapping newHost = new HostMapping(mac, ip,99999);
+		ArrayList<HostMapping> tmp = new ArrayList<>(hosts);
+		for(HostMapping h: tmp){
+			if(h.equals(newHost)){
+				hosts.remove(newHost);
+			}
+		}
+	}
+	
+	public ArrayList<HostMapping> getHosts(){
+		return hosts;
 	}
 	
 	

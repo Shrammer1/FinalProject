@@ -1,6 +1,5 @@
 package topology;
 
-import java.nio.ByteBuffer;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +21,11 @@ public class TopologyMapper implements Runnable{
 		this.switches = switches;
 		this.threadName = name;
 	}
+	
+	
+	//public SwitchMapping get
+	
+	
 	
 	
 	@Override
@@ -60,21 +64,19 @@ public class TopologyMapper implements Runnable{
       }
    }	
 	
-	public synchronized void learn(byte[] macAddr, int inPort, OVSwitch sw){
-		SwitchMapping me = new SwitchMapping(inPort,sw,macAddr, 300);
-		if(!(macTable.contains(me))){
-			macTable.add(me);
+	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OVSwitch sw){
+		
+		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
+		if(!(macTable.contains(mapping))){
+			macTable.add(mapping);
 		}
 		if((links.getLink(inPort, sw)) == null){
-			hosts.add(new SwitchMapping(inPort, sw, macAddr,300));
-			//System.out.println(hosts.size());
-			//System.out.println(hosts.toString());
+			hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,300));
 		}
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
 		OVSwitch farEnd = null;
-		//System.out.println(links.toString());
 		for(OVSwitch s:switches){
 			try {
 				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
@@ -84,6 +86,12 @@ public class TopologyMapper implements Runnable{
 			} catch (RemoteException e) {
 				//can never occur
 			}
+		}
+		
+		//Check if the receiving port has any hosts associated with it, if it does delete them.
+		SwitchMapping testMap = hosts.getMapping(inPort,sw);
+		if(testMap != null){
+			hosts.deleteMapping(testMap);
 		}
 		
  		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);

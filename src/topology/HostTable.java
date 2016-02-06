@@ -1,30 +1,35 @@
 package topology;
 
-import java.nio.ByteBuffer;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Iterator;
+import controller.OVSwitch;
 
 public class HostTable extends ArrayList<SwitchMapping>{
 
 	private static final long serialVersionUID = 853289804357492274L;
 	
-	public SwitchMapping getMapping(byte[] mac){
-		
+	public SwitchMapping getMapping(int inPort, OVSwitch sw){
+		SwitchMapping testMap = new SwitchMapping(inPort, sw);
 		for(SwitchMapping map:this){
-			if(map.getMacs().contains(mac)) return map;
+			if(map.equals(testMap)) return map;
 		}
 		
 		return null;
 	}
 	
+	public void deleteMapping(SwitchMapping map){
+		this.remove(map);
+	}
+	
 	public String toString(){
 		String retval = "";
 		for(SwitchMapping map:this){
-			for(byte[] mac:map.getMacs()){
+			for(HostMapping h:map.getHosts()){
 				try {
 					//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(mac) + "\n";
+					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
 				} catch (RemoteException e) {
 					//will never happen
 				}
@@ -33,7 +38,23 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		return retval;
 	}
 	
+	private String intToIP(int ip){
+	  byte[] addr = new byte[] {
+	    (byte)((ip >>> 24) & 0xff),
+	    (byte)((ip >>> 16) & 0xff),
+	    (byte)((ip >>>  8) & 0xff),
+	    (byte)((ip       ) & 0xff)};
+
+	  try {
+		return InetAddress.getByAddress(addr).getHostAddress();
+	  } catch (UnknownHostException e) {
+		e.printStackTrace();
+	  }
+	  return null;
+	}
 	
+	
+	//TODO: make this a public static class/method
 	private String bytesToString(byte[] mac){
 		StringBuilder sb = new StringBuilder(18);
 	    for (byte b : mac) {
@@ -46,24 +67,27 @@ public class HostTable extends ArrayList<SwitchMapping>{
 	
 	
 	public synchronized boolean add(SwitchMapping map){
-		synchronized (this) {
-			this.remove(map);
-			boolean retval = super.add(map);
-			this.notifyAll();
-			return retval;
+		for(SwitchMapping m:this){
+			if(m.equals(map)){
+				m.updateHosts(map.getHosts());
+				return true;
+			}
 		}
+		return super.add(map);
 	}
 
 	public void cleanDead() {
-		synchronized (this) {
-			Iterator<SwitchMapping> i = this.iterator();
-			while(i.hasNext()){
-				if(!(i.next().isValid())){
-					i.remove();
-				}
+				
+		ArrayList<SwitchMapping> tmp = new ArrayList<SwitchMapping>(this);
+		for(SwitchMapping map:tmp){
+			if(!(map.isValid())){
+				this.remove(map);
 			}
-			this.notifyAll();
 		}
+		
+		
+		
+		
 	}
 	
 	

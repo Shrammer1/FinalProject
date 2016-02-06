@@ -1,8 +1,6 @@
 package topology;
 
 import java.util.ArrayList;
-import java.util.Iterator;
-
 import controller.OVSwitch;
 
 public class LinkTable extends ArrayList<Link> {
@@ -18,7 +16,8 @@ public class LinkTable extends ArrayList<Link> {
 		return null;
 	}
 	
-	public void cleanDead() {
+	public synchronized void cleanDead() {
+		/*
 		synchronized (this) {
 			Iterator<Link> i = this.iterator();
 			while(i.hasNext()){
@@ -28,6 +27,16 @@ public class LinkTable extends ArrayList<Link> {
 			}
 			this.notifyAll();
 		}
+		*/
+		
+		ArrayList<Link> tmp = new ArrayList<Link>(this);
+		for(Link l:tmp){
+			if(!(l.isValid())){
+				this.remove(l);
+			}
+		}
+		
+		
 	}
 	
 	
