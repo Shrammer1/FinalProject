@@ -7,7 +7,7 @@ public class HostMapping {
 	public byte[] mac;
 	public int ip;
 	private long ttl;
-	private long created;
+	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	
 	public boolean isValid(){
 		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > ttl){
@@ -18,7 +18,8 @@ public class HostMapping {
 	
 	public void update(HostMapping map){
 		if(map.ip != 0){
-			ip = map.ip;
+			this.ip = map.ip;
+			created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 		}
 	}
 	
@@ -32,7 +33,6 @@ public class HostMapping {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ip;
 		result = prime * result + Arrays.hashCode(mac);
 		return result;
 	}

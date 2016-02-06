@@ -40,7 +40,7 @@ public class SwitchMapping{
 	}
 	
 	public boolean isValid(){
-		ArrayList<HostMapping> tmp = new ArrayList<HostMapping>();
+		ArrayList<HostMapping> tmp = new ArrayList<HostMapping>(hosts);
 		for(HostMapping h:tmp){
 			if(!(h.isValid())){
 				hosts.remove(h);
@@ -64,14 +64,22 @@ public class SwitchMapping{
 	}
 	
 	public void updateHosts(ArrayList<HostMapping> hosts){
+		boolean flag = false;
+		ArrayList<HostMapping> hostsToAdd = new ArrayList<>();
 		for(HostMapping h1: hosts){
+			flag = false;
 			for(HostMapping h2: this.hosts){
 				if(h1.equals(h2)){
 					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 					h1.update(h2);
+					flag = true;
 				}
 			}
+			if(!(flag)){ //we didnt find any hosts to update so add the host as a new one.
+				hostsToAdd.add(h1);
+			}
 		}
+		this.hosts.addAll(hostsToAdd);
 	}
 	
 	
