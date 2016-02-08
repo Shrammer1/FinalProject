@@ -69,9 +69,13 @@ public class SwitchMapping{
 		for(HostMapping h1: hosts){
 			flag = false;
 			for(HostMapping h2: this.hosts){
-				if(h1.equals(h2)){
+				if(h2.equals(h1)){
+					if(h1.ip == 0 || h2.ip ==0){
+						int i =1;
+					}
+					
 					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-					h1.update(h2);
+					h2.update(h1);
 					flag = true;
 				}
 			}
