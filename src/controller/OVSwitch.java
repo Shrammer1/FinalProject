@@ -25,6 +25,8 @@ import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFPort;
+import org.openflow.protocol.OFPortMod;
+import org.openflow.protocol.OFPortStatus;
 import org.openflow.protocol.OFStatisticsReply;
 import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.OFPhysicalPort.OFPortState;
@@ -450,9 +452,12 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    						}
 	    					}
 	    				}
+	    				else if(msg.getType() == OFType.PORT_STATUS){
+	    					topo.updateLinks(((OFPortStatus) msg).getDesc().getPortNumber(), this);	    					
+	    				}
 	    				else if(msg.getType() == OFType.ERROR){
 							OFError err = ((OFError) msg);
-							System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
+							//System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
 	    				if(flag == false){

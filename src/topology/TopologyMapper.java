@@ -40,8 +40,10 @@ public class TopologyMapper implements Runnable{
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastSent > 4){
+			if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastSent > 10){
 				lastSent = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+				//System.out.println("\nPrinting link table:");
+				//System.out.println(links.toString());
 				for(OVSwitch sw : switches){
 					sw.discover();
 				}
@@ -64,8 +66,22 @@ public class TopologyMapper implements Runnable{
       }
    }	
 	
+	
+	public synchronized void updateLinks(int port, OVSwitch sw){
+		Link lnk = links.getLink(port, sw);
+		if(lnk != null){
+			links.remove(lnk);
+		}
+		SwitchMapping swMap = hosts.getMapping(port, sw);
+		if(hosts.contains(swMap)){
+			hosts.remove(swMap);
+		}
+		for(OVSwitch s:switches){
+			s.discover();
+		}
+	}
+	
 	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OVSwitch sw){
-		System.out.println(hosts.toString());
 		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
@@ -91,7 +107,7 @@ public class TopologyMapper implements Runnable{
 		//Check if the receiving port has any hosts associated with it, if it does delete them.
 		SwitchMapping testMap = hosts.getMapping(inPort,sw);
 		if(testMap != null){
-			hosts.deleteMapping(testMap);
+			hosts.remove(testMap);
 		}
 		
  		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);

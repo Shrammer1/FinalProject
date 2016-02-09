@@ -47,6 +47,7 @@ public class SwitchMapping{
 			}
 		}
 		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > ttl){
+			//System.out.println("Mapping expired: " + this.toString());
 			return false;
 		}
 		return true;

@@ -19,8 +19,9 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		return null;
 	}
 	
-	public void deleteMapping(SwitchMapping map){
-		this.remove(map);
+	public boolean remove(Object o){
+		//System.out.println("Removing host mapping: " + ((SwitchMapping) o).toString());
+		return super.remove(o);
 	}
 	
 	public String toString(){

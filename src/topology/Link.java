@@ -17,9 +17,13 @@ public class Link extends ArrayList<SwitchMapping>{
 			retval = retval + map.toString() + " - ";
 		}
 		
+		if(retval.equals("")) retval = "Removing dead link (no mappings)";
 		return retval;
 	}
 	
+	public boolean equals(Object l){
+		return super.equals(l);
+	}
 		
 	public void addSwitch(int port, OVSwitch sw, long ttl){
 		this.add(new SwitchMapping(port, sw, ttl));

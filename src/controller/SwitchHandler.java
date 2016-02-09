@@ -148,6 +148,9 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	public synchronized void addSwitch(OVSwitch sw){
 		synchronized (switches) {
 			switches.add(sw);
+			for(OVSwitch s: switches){
+				s.discover();
+			}
 			switches.notifyAll();
 			try {
 				reg.rebind(sw.getSwitchID(), sw);
