@@ -203,7 +203,7 @@ public class L2_LearningAPP {
 	            instructions.add(instruction);
 	            
 	            fm.setInstructions(instructions);
-
+	            fm.computeLength();
             	ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
     			fm.writeTo(toData);
     			byte[] msgData = new byte[fm.getLengthU()];
