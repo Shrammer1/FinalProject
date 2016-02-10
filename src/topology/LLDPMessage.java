@@ -30,6 +30,9 @@ public class LLDPMessage {
 	 * @return Returns the length of the LLDP message in bytes
 	 */
 	public int length(){
+		
+		//TODO: add in the optional TLVs
+		
 		int retval = 0;
 		retval +=dstMac.length;
 		retval +=srcMac.length;
@@ -67,6 +70,11 @@ public class LLDPMessage {
 		this.eof = eof.toArray();
 		this.switchID = new String(chasisID.getData());
 		this.port = ByteBuffer.wrap(portID.getData()).getInt();
+	}
+	
+	public short getTTL(){
+		TLV ttl = new TLV(ByteBuffer.wrap(this.ttl));
+		return ByteBuffer.wrap(ttl.getData()).getShort();
 	}
 	
 	public int getPort(){
@@ -173,7 +181,8 @@ public class LLDPMessage {
 		//finalMsg.put(fcs);
 		
 		return finalMsg.array();
-	}	
+	}
+
 }
 	
 	

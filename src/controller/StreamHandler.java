@@ -86,7 +86,7 @@ public class StreamHandler implements Runnable{
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
 		} catch (InterruptedException e) {
-			LOGGER.log(Level.SEVERE, e.toString());
+			//This is normal behavior when stopping a vSwitch
 		}
 	}
 

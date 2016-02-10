@@ -25,6 +25,8 @@ import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFPort;
+import org.openflow.protocol.OFPortMod;
+import org.openflow.protocol.OFPortStatus;
 import org.openflow.protocol.OFStatisticsReply;
 import org.openflow.protocol.OFStatisticsRequest;
 import org.openflow.protocol.OFPhysicalPort.OFPortState;
@@ -257,7 +259,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	 */
 	
 	public synchronized void discover(){
-		if(!(sthl.isAlive())){return;}
+		if(sthl == null){return;}
 		for(OFPhysicalPort ofp : ports){
 			LLDPMessage msg = new LLDPMessage(switchID, ofp.getPortNumber());
 			OFActionOutput action = new OFActionOutput();
@@ -294,6 +296,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	@Override
 	public void run(){
 		
+		boolean flag = false;
 		
 		//Creating/Instantiating a new StreamHandler Object
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
@@ -433,10 +436,11 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
 	    					
 	    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
+	    						flag = true;
 	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
 	    					}
 	    					else{
-	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(),((OFPacketIn)msg).getInPort(), this);
+	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
 	    					}
 	    					
 	    				}
@@ -448,23 +452,29 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    						}
 	    					}
 	    				}
+	    				else if(msg.getType() == OFType.PORT_STATUS){
+	    					topo.updateLinks(((OFPortStatus) msg).getDesc().getPortNumber(), this);	    					
+	    				}
 	    				else if(msg.getType() == OFType.ERROR){
 							OFError err = ((OFError) msg);
-							System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
+							//System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
-	    				
-	    				//Evaluate if Layer 2 functionality is enabled and act upon it
-	    				if(l2_learning){
-	    					//Add the message to the packet handler and activate a Thread for processing
-	    					pkhl.addPacket(msg);
-	    					pkhl.wakeUp();
-	    				}
-	    				else{
-	    					for(Map.Entry<String,Registration> r: registrations.entrySet()){
+	    				if(flag == false){
+		    				//Evaluate if Layer 2 functionality is enabled and act upon it
+		    				if(l2_learning){
+		    					//Add the message to the packet handler and activate a Thread for processing
+		    					pkhl.addPacket(msg);
+		    					pkhl.wakeUp();
+		    				}
+		    				//TODO: come up with a way to let apps register and hear about PacketINs containing LLDP messages (should we even let this happen?)
+		    				for(Map.Entry<String,Registration> r: registrations.entrySet()){
 	    						r.getValue().addMsg(msg);
 	    					}
-	    				}	
+	    				}
+	    				else{
+	    					flag = false;
+	    				}
 	    			}
     	        }
             }

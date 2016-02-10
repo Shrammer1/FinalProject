@@ -29,7 +29,7 @@ public class L2_LearningAPP {
 	public static void main(String[] args) {
 			
 		String serverURL = "rmi://127.0.0.1:1099/"; //this is the registry entry we want to use
-		String controllerExt = "controller";
+		String controllerExt = args[0];
 		//serverIntf is the interface we use to invoke methods on the server. Here we are retrieving the server object by looking it up in the registry
 		try {
 			SwitchHandlerAPI controllerIntf =(SwitchHandlerAPI)Naming.lookup(serverURL + controllerExt);
@@ -88,7 +88,7 @@ public class L2_LearningAPP {
 		 * Switch stays in Fail_Secure mode where it drops all until connected/managed
 		 * by a controller.
 		 */
-		private Map<Integer, Short> macTable;
+		private Map<Integer, Integer> macTable;
 		
 		
 		private String threadName;
@@ -111,7 +111,7 @@ public class L2_LearningAPP {
 			this.threadName = threadname;
 			this.id = id;
 			this.swAPI = swAPI;
-			this.macTable = new LRULinkedHashMap<Integer, Short>(64001, 64000);
+			this.macTable = new LRULinkedHashMap<Integer, Integer>(64001, 64000);
 		}
 		
 		/**************************************************
@@ -157,7 +157,7 @@ public class L2_LearningAPP {
 	         */
 	        if ((dlSrc[0] & 0x1) == 0) {
 	            if (!macTable.containsKey(dlSrcKey) || !macTable.get(dlSrcKey).equals(pi.getInPort())) {
-	                macTable.put(dlSrcKey, (short) pi.getInPort());
+	                macTable.put(dlSrcKey, pi.getInPort());
 	            }
 	        }
 	        
@@ -165,17 +165,15 @@ public class L2_LearningAPP {
 	         *STEP_2: Lookup destination MAC (dlDstKey), if found in macTable set 
 	         *the output port, else output port is NULL. 
 	         */
-	        Short outPort = null;
+	        Integer outPort = null;
 	        // if the destination is not multicast, look it up
 	        if ((dlDst[0] & 0x1) == 0) {
 	            outPort = macTable.get(dlDstKey);
 	        }
 
-	        /*
-	         * STEP_3_A: If the output port is known, create and push a FlowMod
-	         */
+	        //STEP_3_A: If the output port is known, create and push a FlowMod
 	        if (outPort != null) {
-	        	//Retrieves an OFMessage instance corresponding to the specified OFType
+	            //Retrieves an OFMessage instance corresponding to the specified OFType
 	        	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
 	            fm.setBufferId(bufferId);
 	            fm.setCommand(OFFlowMod.OFPFC_ADD);
@@ -191,7 +189,7 @@ public class L2_LearningAPP {
 	            match.setDataLayerSource(pktIn.getDataLayerSource());
 	            fm.setMatch(match);
 	            
-	            fm.setPriority((short) 0);
+	            fm.setPriority((short) 1);
 	            OFActionOutput action = new OFActionOutput();
 	            action.setMaxLength((short) 0);
 	            action.setPort(outPort);
@@ -205,54 +203,45 @@ public class L2_LearningAPP {
 	            instructions.add(instruction);
 	            
 	            fm.setInstructions(instructions);
-	            ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
-	            fm.writeTo(toData);
-				byte[] msgData = new byte[fm.getLengthU()];
-				msgData = toData.array();
-				swAPI.sendMsg(msgData);
+	            fm.computeLength();
+            	ByteBuffer toData =  ByteBuffer.allocate(fm.getLengthU());
+    			fm.writeTo(toData);
+    			byte[] msgData = new byte[fm.getLengthU()];
+    			msgData = toData.array();
+    			swAPI.sendMsg(msgData);
+				
 	        }
 
-	        /*
-	         * Sending packet out
-	         */
+	        //Sending packet out
 	        if (outPort == null || pi.getBufferId() == 0xffffffff) {
 	            OFPacketOut po = new OFPacketOut();
 	            po.setBufferId(bufferId);
 	            po.setInPort(pi.getInPort());
 
-	            /*
-	             * Setting actions
-	             */
+	            //Setting actions
 	            OFActionOutput action = new OFActionOutput();
 	            action.setMaxLength((short) 0);
-	            /*
-	             * STEP_3_B: If the output port is unknown, flood the packet.
-	             */
+	            //STEP_3_B: If the output port is unknown, flood the packet.
 	            action.setPort((short) ((outPort == null) ? OFPort.OFPP_FLOOD.getValue() : outPort));
 	            List<OFAction> actions = new ArrayList<OFAction>();
 	            actions.add(action);
 	            po.setActions(actions);
 	            po.setActionsLength((short) OFActionOutput.MINIMUM_LENGTH);
 
-	            /*
-	             * Setting data if needed
-	             */
+	            //Setting data if needed
 	            if (bufferId == 0xffffffff) {
 	                byte[] packetData = pi.getPacketData();
-	                /*
-	                 * Setting header
-	                 */
+	                //Setting header
 	                po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH + po.getActionsLength() + packetData.length));
 	                po.setPacketData(packetData);
 	            } else {
 	                po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH+ po.getActionsLength()));
 	            }
 	            ByteBuffer toData =  ByteBuffer.allocate(po.getLengthU());
-	            po.writeTo(toData);
-				byte[] msgData = new byte[po.getLengthU()];
-				msgData = toData.array();
-				swAPI.sendMsg(msgData);
-	            
+    			po.writeTo(toData);
+    			byte[] msgData = new byte[po.getLengthU()];
+    			msgData = toData.array();
+    			swAPI.sendMsg(msgData);
 	        }
 		}
 		

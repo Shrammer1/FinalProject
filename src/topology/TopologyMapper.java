@@ -2,7 +2,6 @@ package topology;
 
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import controller.OVSwitch;
@@ -14,7 +13,8 @@ public class TopologyMapper implements Runnable{
 	private Thread t;
 	private String threadName;
 	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
-	private ArrayList<MacEntry> macTable = new ArrayList<MacEntry>();
+	private ArrayList<SwitchMapping> macTable = new ArrayList<SwitchMapping>();
+	private HostTable hosts = new HostTable();
 	private LinkTable links = new LinkTable();
 	
 	public TopologyMapper(String name,ArrayList<OVSwitch> switches) {
@@ -23,18 +23,27 @@ public class TopologyMapper implements Runnable{
 	}
 	
 	
+	//public SwitchMapping get
+	
+	
+	
+	
 	@Override
 	public void run() {
 		
 		long lastSent = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 		while(!(t.isInterrupted())){
 			try {
-				Thread.sleep(300);
+				Thread.sleep(1000);
+				hosts.cleanDead();
+				links.cleanDead();
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastSent > 4){
+			if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastSent > 10){
 				lastSent = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+				//System.out.println("\nPrinting link table:");
+				//System.out.println(links.toString());
 				for(OVSwitch sw : switches){
 					sw.discover();
 				}
@@ -57,19 +66,33 @@ public class TopologyMapper implements Runnable{
       }
    }	
 	
-	public synchronized void learn(byte[] macAddr, int inPort, OVSwitch sw){
-		MacEntry me = new MacEntry(macAddr,inPort,sw);
-		if(!(macTable.contains(me))){
-			macTable.add(me);
+	
+	public synchronized void updateLinks(int port, OVSwitch sw){
+		Link lnk = links.getLink(port, sw);
+		if(lnk != null){
+			links.remove(lnk);
+		}
+		SwitchMapping swMap = hosts.getMapping(port, sw);
+		if(hosts.contains(swMap)){
+			hosts.remove(swMap);
+		}
+		for(OVSwitch s:switches){
+			s.discover();
+		}
+	}
+	
+	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OVSwitch sw){
+		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
+		if(!(macTable.contains(mapping))){
+			macTable.add(mapping);
+		}
+		if((links.getLink(inPort, sw)) == null){
+			hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,300));
 		}
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
-		
-		System.out.println(links.toString());
-		
 		OVSwitch farEnd = null;
-
 		for(OVSwitch s:switches){
 			try {
 				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
@@ -81,7 +104,13 @@ public class TopologyMapper implements Runnable{
 			}
 		}
 		
-		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);
+		//Check if the receiving port has any hosts associated with it, if it does delete them.
+		SwitchMapping testMap = hosts.getMapping(inPort,sw);
+		if(testMap != null){
+			hosts.remove(testMap);
+		}
+		
+ 		Link lnk = links.getLink(lldpMessage.getPort(), farEnd);
 		
 		if(lnk==null){
 			//the originating switch doesn't have a link object associated to it. Lets see if the recieving switch has one
@@ -89,9 +118,12 @@ public class TopologyMapper implements Runnable{
 			if(lnk == null){
 				//neither the current switch nor the originating switch has a link, create a new link and add both of them to it
 				lnk = new Link();
-				lnk.addSwitch(lldpMessage.getPort(), farEnd);
-				lnk.addSwitch(inPort, sw);
+				lnk.addSwitch(lldpMessage.getPort(), farEnd,lldpMessage.getTTL());
+				lnk.addSwitch(inPort, sw,lldpMessage.getTTL());
 				links.add(lnk);
+			}
+			else{
+				lnk.addSwitch(lldpMessage.getPort(), farEnd,lldpMessage.getTTL());
 			}
 			
 			
@@ -100,11 +132,8 @@ public class TopologyMapper implements Runnable{
 			//the far end has a link. Lets see if the local end has one
 			Link lnk2 = links.getLink(inPort, sw);
 			if(lnk2==null){
-				//we dont know about either switch - port mapping. learn them
-				lnk = new Link();
-				lnk.addSwitch(lldpMessage.getPort(), farEnd);
-				lnk.addSwitch(inPort, sw);
-				links.add(lnk);
+				//local doesnt, add it
+				lnk.addSwitch(inPort, sw, lldpMessage.getTTL());
 			}
 			else{
 				//if lnk and lnk2 are the same object we already know about this link.
@@ -112,7 +141,6 @@ public class TopologyMapper implements Runnable{
 					return;
 				}
 				else{
-					/*
 					//if lnk and lnk2 are different objects it means that something has changed in the topology from the last time we learned everything
 					links.remove(lnk);
 					links.remove(lnk2);
@@ -123,71 +151,9 @@ public class TopologyMapper implements Runnable{
 						map.getSw().discover();
 					}
 					
-					*/
 				}
 			}
 		}
 		
 	}
-	
-			
-	
-	
-	private class MacEntry{
-		
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + getOuterType().hashCode();
-			result = prime * result + Arrays.hashCode(mac);
-			result = prime * result + port;
-			result = prime * result + ((sw == null) ? 0 : sw.hashCode());
-			return result;
-		}
-
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			MacEntry other = (MacEntry) obj;
-			if (!getOuterType().equals(other.getOuterType()))
-				return false;
-			if (!Arrays.equals(mac, other.mac))
-				return false;
-			if (port != other.port)
-				return false;
-			if (sw == null) {
-				if (other.sw != null)
-					return false;
-			} else if (!sw.equals(other.sw))
-				return false;
-			return true;
-		}
-
-		private byte[] mac;
-		private int port;
-		private OVSwitch sw;
-		
-		
-		
-		public MacEntry(byte[] mac, int inPort, OVSwitch sw){
-			this.mac = mac;
-			this.port = inPort;
-			this.sw = sw;
-			
-		}
-
-
-		private TopologyMapper getOuterType() {
-			return TopologyMapper.this;
-		}
-	}
-
-
 }
