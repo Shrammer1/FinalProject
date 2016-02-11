@@ -20,8 +20,7 @@ import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.util.LRULinkedHashMap;
 import org.openflow.util.U16;
-import api.OVSwitchAPI;
-import api.SwitchHandlerAPI;
+import api.ControllerAPI;
 
 
 public class L2_LearningAPP {
@@ -32,19 +31,18 @@ public class L2_LearningAPP {
 		String controllerExt = args[0];
 		//serverIntf is the interface we use to invoke methods on the server. Here we are retrieving the server object by looking it up in the registry
 		try {
-			SwitchHandlerAPI controllerIntf =(SwitchHandlerAPI)Naming.lookup(serverURL + controllerExt);
+			ControllerAPI controllerIntf =(ControllerAPI)Naming.lookup(serverURL + controllerExt);
 			ArrayList<String> swLst = controllerIntf.listSwitches();
 			ArrayList<RemoteSwitch> switches = new ArrayList<RemoteSwitch>();
 			
 			
 			for(String sw: swLst){
-				OVSwitchAPI swAPI = (OVSwitchAPI) Naming.lookup(serverURL + sw);
-				switches.add(new RemoteSwitch(swAPI,new PacketHandler(sw, sw + "sw_pkhl", swAPI)));
+				switches.add(new RemoteSwitch(sw,new PacketHandler(sw, sw + "sw_pkhl", controllerIntf)));
 			}
 			
 			
 			for(RemoteSwitch sw: switches){
-				sw.swAPI.register(sw.pkhl.getID(), OFType.PACKET_IN);
+				controllerIntf.register(sw.switchID,sw.pkhl.getID(), OFType.PACKET_IN);
 				sw.pkhl.start();
 			}
 			
@@ -56,11 +54,11 @@ public class L2_LearningAPP {
 	}
 	
 	private static class RemoteSwitch{
-		public OVSwitchAPI swAPI;
+		public String switchID;
 		public PacketHandler pkhl;
 		
-		public RemoteSwitch(OVSwitchAPI swAPI, PacketHandler pkhl){
-			this.swAPI = swAPI;
+		public RemoteSwitch(String switchID, PacketHandler pkhl){
+			this.switchID = switchID;
 			this.pkhl = pkhl;
 		}
 		
@@ -93,11 +91,12 @@ public class L2_LearningAPP {
 		
 		private String threadName;
 		private Thread t;
-		private OVSwitchAPI swAPI;
+		private ControllerAPI controllerIntf;
 		
 		BasicFactory factory = BasicFactory.getInstance();
 		private List<OFMessage> l = new ArrayList<OFMessage>();
 		private String id;
+		private String switchID;
 
 		public String getID(){
 			return id;
@@ -106,11 +105,12 @@ public class L2_LearningAPP {
 		/**************************************************
 		 * CONSTRUCTORS
 		 **************************************************/
-		public PacketHandler(String threadname, String id, OVSwitchAPI swAPI)
+		public PacketHandler(String switchID, String id, ControllerAPI controllerIntf)
 		{
-			this.threadName = threadname;
+			this.switchID = switchID;
+			this.threadName = switchID;
 			this.id = id;
-			this.swAPI = swAPI;
+			this.controllerIntf = controllerIntf;
 			this.macTable = new LRULinkedHashMap<Integer, Integer>(64001, 64000);
 		}
 		
@@ -208,7 +208,7 @@ public class L2_LearningAPP {
     			fm.writeTo(toData);
     			byte[] msgData = new byte[fm.getLengthU()];
     			msgData = toData.array();
-    			swAPI.sendMsg(msgData);
+    			controllerIntf.sendMsg(switchID,msgData);
 				
 	        }
 
@@ -241,7 +241,7 @@ public class L2_LearningAPP {
     			po.writeTo(toData);
     			byte[] msgData = new byte[po.getLengthU()];
     			msgData = toData.array();
-    			swAPI.sendMsg(msgData);
+    			controllerIntf.sendMsg(switchID,msgData);
 	        }
 		}
 		
@@ -284,7 +284,7 @@ public class L2_LearningAPP {
 			fm.writeTo(toData);
 			byte[] msgData = new byte[fm.getLengthU()];
 			msgData = toData.array();
-			swAPI.sendMsg(msgData);
+			controllerIntf.sendMsg(switchID,msgData);
 		}
 		
 
@@ -295,7 +295,7 @@ public class L2_LearningAPP {
 		    	ArrayList<OFMessage> lst = null;
 		    	
 		    	try {
-		    		lst = (ArrayList<OFMessage>) factory.parseMessages(ByteBuffer.wrap(swAPI.getMessage(this.id)));
+		    		lst = (ArrayList<OFMessage>) factory.parseMessages(ByteBuffer.wrap(controllerIntf.getMessage(switchID,this.id)));
 				} catch (RemoteException e1) {
 					e1.printStackTrace();
 				}

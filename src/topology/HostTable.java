@@ -4,13 +4,13 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import controller.OVSwitch;
+import controller.OFSwitch;
 
 public class HostTable extends ArrayList<SwitchMapping>{
 
 	private static final long serialVersionUID = 853289804357492274L;
 	
-	public SwitchMapping getMapping(int inPort, OVSwitch sw){
+	public SwitchMapping getMapping(int inPort, OFSwitch sw){
 		SwitchMapping testMap = new SwitchMapping(inPort, sw);
 		for(SwitchMapping map:this){
 			if(map.equals(testMap)) return map;

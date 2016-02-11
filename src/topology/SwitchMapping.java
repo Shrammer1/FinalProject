@@ -4,7 +4,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import controller.OVSwitch;
+import controller.OFSwitch;
 
 /**
  * Used to represent a switch on a link with a specific port
@@ -12,23 +12,23 @@ import controller.OVSwitch;
  */
 public class SwitchMapping{
 	private int port;
-	private OVSwitch sw;
+	private OFSwitch sw;
 	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	private long ttl;
 	private ArrayList<HostMapping> hosts = new ArrayList<HostMapping>();
 	
-	public SwitchMapping(int port, OVSwitch sw){
+	public SwitchMapping(int port, OFSwitch sw){
 		this.port = port;
 		this.sw = sw;
 	}
 	
 	
-	public SwitchMapping(int port, OVSwitch sw, long ttl){
+	public SwitchMapping(int port, OFSwitch sw, long ttl){
 		this.port = port;
 		this.sw = sw;
 		this.ttl = ttl;
 	}
-	public SwitchMapping(int port, OVSwitch sw,byte[] mac, int ip, long ttl){
+	public SwitchMapping(int port, OFSwitch sw,byte[] mac, int ip, long ttl){
 		this.port = port;
 		this.sw = sw;
 		this.ttl = ttl * 3;
@@ -126,11 +126,11 @@ public class SwitchMapping{
 		this.port = port;
 	}
 
-	public OVSwitch getSw() {
+	public OFSwitch getSw() {
 		return sw;
 	}
 
-	public void setSw(OVSwitch sw) {
+	public void setSw(OFSwitch sw) {
 		this.sw = sw;
 	}
 

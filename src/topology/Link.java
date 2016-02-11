@@ -3,7 +3,7 @@ package topology;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import controller.OVSwitch;
+import controller.OFSwitch;
 import topology.SwitchMapping;
 
 public class Link extends ArrayList<SwitchMapping>{
@@ -25,11 +25,11 @@ public class Link extends ArrayList<SwitchMapping>{
 		return super.equals(l);
 	}
 		
-	public void addSwitch(int port, OVSwitch sw, long ttl){
+	public void addSwitch(int port, OFSwitch sw, long ttl){
 		this.add(new SwitchMapping(port, sw, ttl));
 	}
 	
-	public int getPort(OVSwitch sw){
+	public int getPort(OFSwitch sw){
 		for(SwitchMapping map : this){
 			if(map.getSw() == sw){
 				return map.getPort();

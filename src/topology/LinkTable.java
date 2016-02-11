@@ -1,7 +1,7 @@
 package topology;
 
 import java.util.ArrayList;
-import controller.OVSwitch;
+import controller.OFSwitch;
 
 public class LinkTable extends ArrayList<Link> {
 
@@ -18,7 +18,7 @@ public class LinkTable extends ArrayList<Link> {
 		return super.add(l);
 	}
 	
-	public Link getLink(int port, OVSwitch sw){
+	public Link getLink(int port, OFSwitch sw){
 		for(Link l:this){
 			if(l.contains(new SwitchMapping(port,sw))){
 				return l;

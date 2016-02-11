@@ -2,14 +2,13 @@ package controller.cli;
 
 import java.rmi.Naming;
 import java.util.ArrayList;
-
-import api.SwitchHandlerAPI;
+import api.ControllerAPI;
 import views.CLIFrame;
 
 public class CLIController {
 
 	private CLIFrame cliFrame;
-	private SwitchHandlerAPI controllerIntf;
+	private ControllerAPI controllerIntf;
 	ArrayList<String> swLst;
 	
 	public CLIController(CLIFrame cliFrame) {
@@ -64,7 +63,7 @@ public class CLIController {
 			return;
 		}
 		try {
-			controllerIntf = (SwitchHandlerAPI) Naming.lookup("rmi://" + text + "/controller");
+			controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + text + "/controller");
 			println("Connected ...");
 		} catch (Exception e){
 			e.printStackTrace();

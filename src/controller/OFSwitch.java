@@ -39,17 +39,12 @@ import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.protocol.statistics.OFPortDescription;
 import org.openflow.protocol.statistics.OFStatistics;
 import org.openflow.protocol.statistics.OFStatisticsType;
-
-import api.OVSwitchAPI;
 import topology.LLDPMessage;
 import topology.TopologyMapper;
 
 //Runnable class
-public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchAPI{
+public class OFSwitch implements Runnable{
 	
-	private static final long serialVersionUID = -5333332671617251523L;
-
-
 	/**************************************************
 	 * PRIVATE VARIABLES
 	 **************************************************/
@@ -63,11 +58,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	private final static Logger LOGGER = Logger.getLogger("Controller_LOGGER");
 	
 
-	
-	//boolean variable to control Layer 2 behavior
-	private boolean l2_learning = false;
-	
-	private TopologyMapper topo;
+
 	private PacketHandler pkhl;
 	private String threadName;
 	private OFMessageAsyncStream stream;
@@ -83,6 +74,8 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	private Map<String,Registration> registrations = new HashMap<String,Registration>();
 	private int switchTimeout;
 	private ArrayList<OFPhysicalPort> ports = new ArrayList<OFPhysicalPort>();
+	private Controller controller;
+	private TopologyMapper topo;
 	
 	/**************************************************
 	 * PUBLIC VARIABLES
@@ -93,24 +86,23 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	/**************************************************
 	 * CONSTRUCTORS
 	 **************************************************/
-	public OVSwitch(String name, String switchID, OFMessageAsyncStream strm, 
-			SocketChannel s, OFFeaturesReply fr, int swtime, TopologyMapper topo, boolean l2_learning) throws RemoteException
+	public OFSwitch(String name, String switchID, OFMessageAsyncStream strm,SocketChannel sock , OFFeaturesReply fr, int swtime, SwitchHandler swhl)
 	{
+		this.sock = sock;
+		this.controller = swhl.getController();
+		this.topo = controller.getTopologyMapper();
 		threadName = name;
 		stream = strm;
-		sock = s;
 		this.switchID = switchID;
 		this.featureReply = fr;
 		this.switchTimeout = swtime;
-		this.l2_learning = l2_learning;
-		this.topo = topo;
 	}
 	
 	
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
-	public boolean equals(OVSwitch sw){
+	public boolean equals(OFSwitch sw){
 		if(sw.switchID == this.switchID){
 			return true;
 		}
@@ -300,7 +292,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		
 		//Creating/Instantiating a new StreamHandler Object
 		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
-		
+		sthl.start();
 		
 		//As of OpenFlow 1.3 a default flow must be sent to the switches to direct non-matching traffic to the controller:
 		//Clear all existing rules
@@ -346,7 +338,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 		 * Evaluating if Layer 2 functionality should be used and sending its
 		 * corresponding arguments.
 		 */
-		if(l2_learning){
+		if(controller.getL2Learning()){
 			
 			//Creating/Instantiating a new PacketHandler Object
 			pkhl = new PacketHandler(threadName + "_PacketHandler",sthl);
@@ -429,8 +421,6 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    			//Any other case
 	    			else {
 	    				
-	    				
-	    				
 	    				if(msg.getType() == OFType.PACKET_IN){
 	    					
 	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
@@ -462,7 +452,7 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
 	    				
 	    				if(flag == false){
 		    				//Evaluate if Layer 2 functionality is enabled and act upon it
-		    				if(l2_learning){
+		    				if(controller.getL2Learning()){
 		    					//Add the message to the packet handler and activate a Thread for processing
 		    					pkhl.addPacket(msg);
 		    					pkhl.wakeUp();
@@ -489,14 +479,14 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
         this.abort();
 	}
 	
-	//Method for Stopping an OVSwitch Thread
+	//Method for Stopping an OFSwitch Thread
 	public void stop(){
 		t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
-		if(l2_learning) pkhl.stop();
+		if(controller.getL2Learning()) pkhl.stop();
 	}
 	
-	//Method for Starting an OVSwitch Thread
+	//Method for Starting an OFSwitch Thread
 	public void start (){
       LOGGER.info("Starting " +  threadName + "\t" + "Switch ID: " + switchID);
       if (t == null){
@@ -505,11 +495,11 @@ public class OVSwitch extends UnicastRemoteObject implements Runnable, OVSwitchA
       }
    }
 	
-	//Method for hot operation abort an OVSwitch Thread
+	//Method for hot operation abort an OFSwitch Thread
 	private void abort(){
 		stop();
 		//If Layer 2 functionality is enabled, stop packet handling
-		if(l2_learning){
+		if(controller.getL2Learning()){
 			pkhl.stop();
 			pkhl=null;
 		}
