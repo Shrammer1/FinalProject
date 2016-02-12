@@ -18,10 +18,11 @@ public class CLIController {
 
 	public void handleCommand(String text) {
 		if(text.toLowerCase().startsWith("connect ")){
-			connect(text.substring(text.indexOf(" ")+1, text.length()));
-			
+			connect(text.split(" "));
 		}else if(text.toLowerCase().startsWith("show ")){
-			show(text.substring(text.indexOf(" ")+1, text.length()));
+			show(text.split(" "));
+		}else if(text.toLowerCase().startsWith("set ")){
+			set(text.split(" "));
 		}else if(text.toLowerCase().startsWith("exit")){
 			exit();
 		}else{
@@ -29,16 +30,26 @@ public class CLIController {
 		}
 	}
 
-	private void exit() {
-		System.exit(0);
+	private void connect(String[] strings) {
+		if(controllerIntf!=null){
+			println("--------------");
+			println("Already Connected ...");
+			return;
+		}
+		try {
+			controllerIntf = (SwitchHandlerAPI) Naming.lookup("rmi://" + strings[1] + "/controller");
+			println("Connected ...");
+		} catch (Exception e){
+			e.printStackTrace();
+		}
 	}
-
-	private void show(String text) {
+	
+	private void show(String[] strings) {
 		if(controllerIntf==null){
 			println("Not Connected ...");
 			return;
 		}
-		if(text.toLowerCase().equals("switches")){
+		if(strings[1].toLowerCase().equals("switches")){
 			try {
 				swLst = controllerIntf.listSwitches();
 				println("Switch List Contains: " + swLst.size() + " Entries ...");
@@ -53,22 +64,8 @@ public class CLIController {
 		}
 	}
 
-	private void println(String s) {
-		cliFrame.println(s);
-	}
-
-	private void connect(String text) {
-		if(controllerIntf!=null){
-			println("--------------");
-			println("Already Connected ...");
-			return;
-		}
-		try {
-			controllerIntf = (SwitchHandlerAPI) Naming.lookup("rmi://" + text + "/controller");
-			println("Connected ...");
-		} catch (Exception e){
-			e.printStackTrace();
-		}
+	private void set(String[] split) {
+		
 	}
 
 	public CLIFrame getCliFrame() {
@@ -77,6 +74,14 @@ public class CLIController {
 
 	public void setCliFrame(CLIFrame cliFrame) {
 		this.cliFrame = cliFrame;
+	}
+
+	private void println(String s) {
+		cliFrame.println(s);
+	}
+
+	private void exit() {
+		System.exit(0);
 	}
 
 }
