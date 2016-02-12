@@ -1,4 +1,4 @@
-package flowSolver;
+package flowsolver;
 
 public enum FlowAction {
 	ALLOW, DROP
