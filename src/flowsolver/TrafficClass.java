@@ -6,7 +6,7 @@ public class TrafficClass implements Serializable{
 
 	private static final long serialVersionUID = -7272204048173591835L;
 	private int tcpPortSrc;
-	private int tcPortDst;
+	private int tcpPortDst;
 	private int udpPortSrc;
 	private int udpPortDst;
 	public int getTcpPortSrc() {
@@ -16,10 +16,10 @@ public class TrafficClass implements Serializable{
 		this.tcpPortSrc = tcpPortSrc;
 	}
 	public int getTvpPortDst() {
-		return tvpPortDst;
+		return tcpPortDst;
 	}
 	public void setTvpPortDst(int tvpPortDst) {
-		this.tvpPortDst = tvpPortDst;
+		this.tcpPortDst = tvpPortDst;
 	}
 	public int getUdpPortSrc() {
 		return udpPortSrc;
@@ -37,5 +37,4 @@ public class TrafficClass implements Serializable{
 		return serialVersionUID;
 	}
 
-	
 }
