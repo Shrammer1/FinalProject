@@ -9,5 +9,33 @@ public class TrafficClass implements Serializable{
 	private int tcPortDst;
 	private int udpPortSrc;
 	private int udpPortDst;
+	public int getTcpPortSrc() {
+		return tcpPortSrc;
+	}
+	public void setTcpPortSrc(int tcpPortSrc) {
+		this.tcpPortSrc = tcpPortSrc;
+	}
+	public int getTvpPortDst() {
+		return tvpPortDst;
+	}
+	public void setTvpPortDst(int tvpPortDst) {
+		this.tvpPortDst = tvpPortDst;
+	}
+	public int getUdpPortSrc() {
+		return udpPortSrc;
+	}
+	public void setUdpPortSrc(int udpPortSrc) {
+		this.udpPortSrc = udpPortSrc;
+	}
+	public int getUdpPortDst() {
+		return udpPortDst;
+	}
+	public void setUdpPortDst(int udpPortDst) {
+		this.udpPortDst = udpPortDst;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
 
+	
 }
