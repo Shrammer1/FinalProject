@@ -10,6 +10,26 @@ public class FlowRequest implements Serializable{
 	private TrafficClass tClass;
 	private int priority;
 	private FlowAction fAction;
+	
+	//***CONSTRUCTORS	
+	public FlowRequest(Domain src, Domain dst, TrafficClass tClass,
+			int priority, FlowAction fAction) {
+		this.src = src;
+		this.dst = dst;
+		this.tClass = tClass;
+		this.priority = priority;
+		this.fAction = fAction;
+	}
+	
+	public FlowRequest(Domain src, TrafficClass tClass, int priority,
+			FlowAction fAction) {
+		this.src = src;
+		this.tClass = tClass;
+		this.priority = priority;
+		this.fAction = fAction;
+	}
+	
+	//***SETTERS AND GETTERS
 	public Domain getSrc() {
 		return src;
 	}
