@@ -12,7 +12,21 @@ public class Domain implements Serializable {
 	private ArrayList<byte[]> networks = new ArrayList<byte[]>();
 	private ArrayList<byte[]> macList = new ArrayList<byte[]>();
 	
+	//***CONSTRUCTORS***
+	public Domain(ArrayList<Domain> subDomains, ArrayList<byte[]> networks,
+			ArrayList<byte[]> macList) {
+		this.subDomains = subDomains;
+		this.networks = networks;
+		this.macList = macList;
+	}
 	
+	
+	public Domain(ArrayList<Domain> subDomains) {
+		this.subDomains = subDomains;
+	}
+
+
+//***GETTERS AND SETTERS
 	public ArrayList<Domain> getSubDomains() {
 		return subDomains;
 	}

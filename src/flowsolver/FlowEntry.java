@@ -11,9 +11,21 @@ public class FlowEntry{
 	private OFSwitch Switch;
 	private ArrayList<FlowRequest> fRequest = new ArrayList<FlowRequest>();
 	
+	//***CONSTRUCTORS
+	public FlowEntry(OFFlowMod fmod, boolean active, OFSwitch switch1,
+			ArrayList<FlowRequest> fRequest) {
+		this.fmod = fmod;
+		this.active = active;
+		Switch = switch1;
+		this.fRequest = fRequest;
+	}
+	
+	
+	//***SETTERS AND GETTERS
 	public OFFlowMod getFmod() {
 		return fmod;
 	}
+	
 	public void setFmod(OFFlowMod fmod) {
 		this.fmod = fmod;
 	}
