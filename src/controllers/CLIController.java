@@ -1,18 +1,18 @@
-package controller.cli;
+package controllers;
 
 import java.rmi.Naming;
 import java.util.ArrayList;
 
 import api.SwitchHandlerAPI;
-import views.CLIFrame;
+import views.CLI;
 
 public class CLIController {
 
-	private CLIFrame cliFrame;
+	private CLI cliFrame;
 	private SwitchHandlerAPI controllerIntf;
-	ArrayList<String> swLst;
+	private ArrayList<String> swLst;
 	
-	public CLIController(CLIFrame cliFrame) {
+	public CLIController(CLI cliFrame) {
 		this.setCliFrame(cliFrame);
 	}
 
@@ -34,6 +34,9 @@ public class CLIController {
 		if(controllerIntf!=null){
 			println("--------------");
 			println("Already Connected ...");
+			return;
+		}else if(strings.length<2){
+			println("Not enough arguments");
 			return;
 		}
 		try {
@@ -64,15 +67,32 @@ public class CLIController {
 		}
 	}
 
-	private void set(String[] split) {
-		
+	private void set(String[] input) {
+		if(input.length<5){
+			println("Not Enough Arguments");
+			return;
+		}
+		if(input[1].equals("switch")){
+			if(input[2].equals("timeout")){
+				try{
+					int newTimout = Integer.parseInt(input[4]);
+					if(controllerIntf.setSwitchTimeout(input[3], newTimout)){
+						println("Success");
+					}else{
+						println("Failure");
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		}
 	}
 
-	public CLIFrame getCliFrame() {
+	public CLI getCliFrame() {
 		return cliFrame;
 	}
 
-	public void setCliFrame(CLIFrame cliFrame) {
+	public void setCliFrame(CLI cliFrame) {
 		this.cliFrame = cliFrame;
 	}
 

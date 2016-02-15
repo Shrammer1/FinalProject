@@ -88,6 +88,21 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
 	public boolean getL2_Learning(){
 		return l2_learning;
 	}
+
+	/*
+	 * 
+	 * 
+	 */
+	@Override
+	public boolean setSwitchTimeout(String switchID, int newTimeout) throws RemoteException {
+		for(OVSwitch ovs : switches){
+			if(ovs.getSwitchID().equals(switchID)){
+				ovs.setSwitchTimeout(newTimeout);
+				return true;
+			}
+		}
+		return false;
+	}	
 	
 	/*
 	 * Method to obtain the list of all switches but allowing those waiting
@@ -226,5 +241,5 @@ public class SwitchHandler extends UnicastRemoteObject implements Runnable, Swit
          t = new Thread (this, threadName);
          t.start ();
       }
-	}	
+	}
 }

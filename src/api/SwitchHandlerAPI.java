@@ -3,6 +3,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
+import controller.OVSwitch;
+
 	/**
 	 * @author Nicholas Landriault
 	 *	
@@ -13,5 +15,6 @@ import java.util.ArrayList;
 	 */
 public interface SwitchHandlerAPI extends Remote {
 	public ArrayList<String> listSwitches() throws RemoteException;
-	public String[] listRegisteredObjects() throws RemoteException; 
+	public String[] listRegisteredObjects() throws RemoteException;
+	public boolean setSwitchTimeout(String switchID, int newTimout) throws RemoteException ;
 }

@@ -9,5 +9,6 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/FinalProject/libs/jopenflow-1.3.0-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="libs/sshd-core-0.9.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
