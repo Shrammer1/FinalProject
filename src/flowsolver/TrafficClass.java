@@ -9,16 +9,16 @@ public class TrafficClass implements Serializable{
 	private int tcpPortDst;
 	private int udpPortSrc;
 	private int udpPortDst;
-	private PortType portType;
+	private PortOpt portType;
 	
 	//***CONSTRUCTORS
-	public TrafficClass(int src, int dst, PortType portType) {
-		if (portType == PortType.TCP)	
+	public TrafficClass(int src, int dst, PortOpt portType) {
+		if (portType == PortOpt.TCP)	
 		{
 			this.tcpPortSrc = src;
 			this.tcpPortDst = dst;
 		}
-		else if (portType == PortType.UDP)
+		else if (portType == PortOpt.UDP)
 		{
 			this.udpPortSrc = src;
 			this.udpPortDst = dst;
@@ -52,7 +52,7 @@ public class TrafficClass implements Serializable{
 		return udpPortDst;
 	}
 	
-	public PortType getportType() {
+	public PortOpt getportType() {
 		return portType;
 	}
 	
