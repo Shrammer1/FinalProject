@@ -6,6 +6,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import org.openflow.io.OFMessageAsyncStream;
@@ -63,11 +64,7 @@ public class SwitchHandler implements Runnable {
 		ArrayList<String> res = new ArrayList<String>();
 		synchronized (controller.getSwitches()) {
 			for(int i = 0; i<controller.getSwitches().size();i++){
-				try {
-					res.add(controller.getSwitches().get(i).getSwitchID());
-				} catch (RemoteException e) {
-					LOGGER.log(Level.SEVERE, e.toString());
-				}
+				res.add(controller.getSwitches().get(i).getSwitchID());
 			}
 			//Allowing those waiting on the object's monitor to continue using it
 			controller.getSwitches().notifyAll();
@@ -133,13 +130,9 @@ public class SwitchHandler implements Runnable {
 		ArrayList<OFSwitch> switches= controller.getSwitches();
 		synchronized (switches) {
 			for(int i = 0; i<switches.size();i++){
-				try {
-					if((sw = switches.get(i)).getSwitchID().equals(switchID)) {
-						switches.notifyAll();
-						return sw;
-					}
-				} catch (RemoteException e) {
-					LOGGER.log(Level.SEVERE, e.toString());
+				if((sw = switches.get(i)).getSwitchID().equals(switchID)) {
+					switches.notifyAll();
+					return sw;
 				}
 			}
 			switches.notifyAll();
@@ -153,7 +146,17 @@ public class SwitchHandler implements Runnable {
 		while(!(t.isInterrupted())){
 			//TODO: USE TIMER TO CLEAN UP SWITCHES!!!!!!
 			try {
-				Thread.sleep(0, 1);
+				Thread.sleep(1000);
+				Iterator<OFSwitch> i = controller.getSwitches().iterator();
+				while(i.hasNext()){
+					OFSwitch sw = (OFSwitch) i.next();
+					if(!(sw.isAlive())){
+						if(sw.hasTimmedOut()){
+							i.remove();
+							LOGGER.log(Level.INFO, "Switch: " + sw.getSwitchFullName() + " has timmed out");
+						}
+					}
+				}
 			} catch (InterruptedException e) {
 				LOGGER.log(Level.SEVERE, e.toString());
 			}
@@ -161,7 +164,7 @@ public class SwitchHandler implements Runnable {
         this.abort();
 	}
 	
-	
+
 	//Method to stop a Thread of a SwitchHandler
 	public void stop(){
 		t.interrupt();

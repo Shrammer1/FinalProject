@@ -110,12 +110,7 @@ public class SwitchMapping{
 	
 	@Override
 	public String toString() {
-		try {
-			return sw.getSwitchFullName() + ":" + port;
-		} catch (RemoteException e) {
-			//can never occur
-		}
-		return null;
+		return sw.getSwitchFullName() + ":" + port;
 	}
 
 	public int getPort() {

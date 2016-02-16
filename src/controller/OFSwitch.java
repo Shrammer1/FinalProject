@@ -102,6 +102,15 @@ public class OFSwitch implements Runnable{
 	/**************************************************
 	 * PUBLIC METHODS
 	 **************************************************/
+	
+	public boolean hasTimmedOut(){
+		long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+		if(now - lastHeard > switchTimeout){
+			return true;
+		}
+		return false;
+	}
+	
 	public boolean equals(OFSwitch sw){
 		if(sw.switchID == this.switchID){
 			return true;
@@ -134,19 +143,19 @@ public class OFSwitch implements Runnable{
 		switchID = l;
 	}
 	
-	public String getSwitchID() throws RemoteException{
+	public String getSwitchID() {
 		return switchID;
 	}
 	
-	public String getSwitchFullName() throws RemoteException {
+	public String getSwitchFullName()  {
 		return nickname + "_" + switchID;
 	}
 	
-	public String getSwitchNickName() throws RemoteException{
+	public String getSwitchNickName() {
 		return nickname;
 	}
 
-	public void setSwitchNickName(String name) throws RemoteException {
+	public void setSwitchNickName(String name)  {
 		this.nickname = name;
 	}
 	
@@ -281,6 +290,7 @@ public class OFSwitch implements Runnable{
 	 * if the thread has been started but has not died yet.
 	 */
 	public boolean isAlive(){
+		if(t == null) return false;
 		return t.isAlive();
 	}
 			
@@ -369,7 +379,7 @@ public class OFSwitch implements Runnable{
             	}
             	//Action taken upon NULL stream
             	catch(NullPointerException e){
-            		abort();
+            		stop();
             		return; //Return to previous try/catch section after abort
             	}
             	
@@ -389,7 +399,7 @@ public class OFSwitch implements Runnable{
             	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
             			- lastHeard > 10)
             	{
-            		abort();
+            		stop();
             		return;
             	}
             	
@@ -471,19 +481,12 @@ public class OFSwitch implements Runnable{
         	
         	
 		} catch (Exception e) {
-			abort();
+			stop();
 			LOGGER.log(Level.SEVERE, e.toString());
 			return;
 		}
         
-        this.abort();
-	}
-	
-	//Method for Stopping an OFSwitch Thread
-	public void stop(){
-		t.interrupt();
-		LOGGER.info("Stopping " +  threadName);
-		if(controller.getL2Learning()) pkhl.stop();
+        this.stop();
 	}
 	
 	//Method for Starting an OFSwitch Thread
@@ -495,9 +498,13 @@ public class OFSwitch implements Runnable{
       }
    }
 	
-	//Method for hot operation abort an OFSwitch Thread
-	private void abort(){
-		stop();
+	//Method for Stopping an OFSwitch Thread
+	public void stop(){
+		t.interrupt();
+		LOGGER.info("Stopping " +  threadName);
+		if(controller.getL2Learning()){
+			pkhl.stop();
+		}
 		//If Layer 2 functionality is enabled, stop packet handling
 		if(controller.getL2Learning()){
 			pkhl.stop();
@@ -515,12 +522,13 @@ public class OFSwitch implements Runnable{
 		}
 	}
 	
+	
 	//Method for hot restart
 	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 
 			OFFeaturesReply fr)
 	{
-		//If there is a Thread alive, abort it
-		try{if(t.isAlive()) abort();}
+		//If there is a Thread alive, stop it
+		try{if(t.isAlive()) stop();}
 		
 		//perfectly normal, just means that the thread is already stopped
 		catch(NullPointerException e){}

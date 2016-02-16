@@ -98,13 +98,9 @@ public class TopologyMapper implements Runnable{
 	public synchronized void learn(LLDPMessage lldpMessage, OFSwitch sw, int inPort) {
 		OFSwitch farEnd = null;
 		for(OFSwitch s:switches){
-			try {
-				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
-					farEnd = s;
-					break;
-				}
-			} catch (RemoteException e) {
-				//can never occur
+			if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
+				farEnd = s;
+				break;
 			}
 		}
 		

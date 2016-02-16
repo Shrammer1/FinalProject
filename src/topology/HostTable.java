@@ -28,12 +28,8 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		String retval = "";
 		for(SwitchMapping map:this){
 			for(HostMapping h:map.getHosts()){
-				try {
-					//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
-				} catch (RemoteException e) {
-					//will never happen
-				}
+				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
 			}
 		}
 		return retval;
