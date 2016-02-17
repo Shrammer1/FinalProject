@@ -36,12 +36,29 @@ public class Server {
 		//Starting a Controller Thread
 		controller.start();
 		
-		
 	}
 	
 	/**************************************************
 	 * PRIVATE METHODS
 	 **************************************************/
+	
+	private static long ipToLong(String ipAddress) {
+
+		String[] ipAddressInArray = ipAddress.split("\\.");
+
+		long result = 0;
+		for (int i = 0; i < ipAddressInArray.length; i++) {
+
+			int power = 3 - i;
+			int ip = Integer.parseInt(ipAddressInArray[i]);
+			result += ip * Math.pow(256, power);
+
+		}
+
+		return result;
+	  }
+	
+	
 	private static String printUsage(){
 		return "Usage: THISFILENAME <Server_Name>\nOptions:\n\n-l2\tBuilt in standard layer 2 learning";
 	}

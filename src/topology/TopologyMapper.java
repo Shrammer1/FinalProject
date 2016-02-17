@@ -56,7 +56,13 @@ public class TopologyMapper implements Runnable{
 		
 	}
 	
-
+	public OFSwitch getMapping(byte[] macAddress){
+		return hosts.getHost(macAddress);
+	}
+	
+	public OFSwitch getMapping(int ipAddress){
+		return hosts.getHost(ipAddress);
+	}
 	
 	public void stop(){
 		t.interrupt();

@@ -19,6 +19,23 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		return null;
 	}
 	
+	public OFSwitch getHost(int ipAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getIp() == ipAddress) return swMap.getSw();
+			}
+		}
+		return null;
+	}
+	public OFSwitch getHost(byte[] macAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getMac() == macAddress) return swMap.getSw();
+			}
+		}
+		return null;
+	}
+	
 	public boolean remove(Object o){
 		//System.out.println("Removing host mapping: " + ((SwitchMapping) o).toString());
 		return super.remove(o);
@@ -29,7 +46,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		for(SwitchMapping map:this){
 			for(HostMapping h:map.getHosts()){
 				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + intToIP(h.getIp()) + "\n";
 			}
 		}
 		return retval;

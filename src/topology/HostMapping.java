@@ -4,8 +4,26 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class HostMapping {
-	public byte[] mac;
-	public int ip;
+	private byte[] mac;
+	private int ip;
+	
+	
+	public byte[] getMac() {
+		return mac;
+	}
+
+	public void setMac(byte[] mac) {
+		this.mac = mac;
+	}
+
+	public int getIp() {
+		return ip;
+	}
+
+	public void setIp(int ip) {
+		this.ip = ip;
+	}
+
 	private long ttl;
 	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	
