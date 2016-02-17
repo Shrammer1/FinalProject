@@ -76,10 +76,12 @@ public class StreamHandler implements Runnable{
 		     * of the interrupt will be reflected by this method returning false. 
 		     */
 			while(!(t.isInterrupted())){
-		    	Thread.sleep(0, 1); //(ms,ns); ownership not lost
+		    	//Thread.sleep(0, 1); //(ms,ns); ownership not lost
+		    	
 		    	synchronized (stream) 
 		    	{
-		    		if(stream.needsFlush()) stream.flush();
+		    		stream.wait();
+		    		while(stream.needsFlush()) stream.flush();
 		    		stream.notifyAll();
 				}
 		    }

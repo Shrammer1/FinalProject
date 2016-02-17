@@ -4,18 +4,35 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import controller.OVSwitch;
+import controller.OFSwitch;
 
 public class HostTable extends ArrayList<SwitchMapping>{
 
 	private static final long serialVersionUID = 853289804357492274L;
 	
-	public SwitchMapping getMapping(int inPort, OVSwitch sw){
+	public SwitchMapping getMapping(int inPort, OFSwitch sw){
 		SwitchMapping testMap = new SwitchMapping(inPort, sw);
 		for(SwitchMapping map:this){
 			if(map.equals(testMap)) return map;
 		}
 		
+		return null;
+	}
+	
+	public OFSwitch getHost(int ipAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getIp() == ipAddress) return swMap.getSw();
+			}
+		}
+		return null;
+	}
+	public OFSwitch getHost(byte[] macAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getMac() == macAddress) return swMap.getSw();
+			}
+		}
 		return null;
 	}
 	
@@ -28,12 +45,8 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		String retval = "";
 		for(SwitchMapping map:this){
 			for(HostMapping h:map.getHosts()){
-				try {
-					//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-					retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
-				} catch (RemoteException e) {
-					//will never happen
-				}
+				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + intToIP(h.getIp()) + "\n";
 			}
 		}
 		return retval;

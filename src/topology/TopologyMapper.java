@@ -4,7 +4,9 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
-import controller.OVSwitch;
+
+import controller.Controller;
+import controller.OFSwitch;
 
 public class TopologyMapper implements Runnable{
 	
@@ -12,13 +14,15 @@ public class TopologyMapper implements Runnable{
 	
 	private Thread t;
 	private String threadName;
-	private ArrayList<OVSwitch> switches = new ArrayList<OVSwitch>();
+	private  ArrayList<OFSwitch> switches;
 	private ArrayList<SwitchMapping> macTable = new ArrayList<SwitchMapping>();
 	private HostTable hosts = new HostTable();
 	private LinkTable links = new LinkTable();
+	private Controller controller;
 	
-	public TopologyMapper(String name,ArrayList<OVSwitch> switches) {
-		this.switches = switches;
+	public TopologyMapper(String name,Controller controller) {
+		this.controller = controller;
+		this.switches = controller.getSwitches();
 		this.threadName = name;
 	}
 	
@@ -44,7 +48,7 @@ public class TopologyMapper implements Runnable{
 				lastSent = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 				//System.out.println("\nPrinting link table:");
 				//System.out.println(links.toString());
-				for(OVSwitch sw : switches){
+				for(OFSwitch sw : switches){
 					sw.discover();
 				}
 			}
@@ -52,7 +56,13 @@ public class TopologyMapper implements Runnable{
 		
 	}
 	
-
+	public OFSwitch getMapping(byte[] macAddress){
+		return hosts.getHost(macAddress);
+	}
+	
+	public OFSwitch getMapping(int ipAddress){
+		return hosts.getHost(ipAddress);
+	}
 	
 	public void stop(){
 		t.interrupt();
@@ -67,7 +77,7 @@ public class TopologyMapper implements Runnable{
    }	
 	
 	
-	public synchronized void updateLinks(int port, OVSwitch sw){
+	public synchronized void updateLinks(int port, OFSwitch sw){
 		Link lnk = links.getLink(port, sw);
 		if(lnk != null){
 			links.remove(lnk);
@@ -76,12 +86,12 @@ public class TopologyMapper implements Runnable{
 		if(hosts.contains(swMap)){
 			hosts.remove(swMap);
 		}
-		for(OVSwitch s:switches){
+		for(OFSwitch s:switches){
 			s.discover();
 		}
 	}
 	
-	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OVSwitch sw){
+	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
 		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
@@ -91,16 +101,12 @@ public class TopologyMapper implements Runnable{
 		}
 	}
 
-	public synchronized void learn(LLDPMessage lldpMessage, OVSwitch sw, int inPort) {
-		OVSwitch farEnd = null;
-		for(OVSwitch s:switches){
-			try {
-				if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
-					farEnd = s;
-					break;
-				}
-			} catch (RemoteException e) {
-				//can never occur
+	public synchronized void learn(LLDPMessage lldpMessage, OFSwitch sw, int inPort) {
+		OFSwitch farEnd = null;
+		for(OFSwitch s:switches){
+			if(s.getSwitchID().equals(lldpMessage.getSwitchID())){
+				farEnd = s;
+				break;
 			}
 		}
 		

@@ -32,22 +32,17 @@ public class SwitchSetup implements Runnable{
 	
 	private String threadName;
 	private Thread t;
-	private OFMessageAsyncStream stream;
 	private SocketChannel sock;
-	private SwitchHandler swhl; 
-	private String swName;
-	private TopologyMapper topo;
+	private OFMessageAsyncStream stream;
+	private SwitchHandler swhl;
 	
 	//Constructor
-	public SwitchSetup(String name,String swName, SocketChannel sock, 
-			OFMessageAsyncStream stream, TopologyMapper topo, SwitchHandler swhl) 
+	public SwitchSetup(String name,SocketChannel sock, OFMessageAsyncStream stream, SwitchHandler swhl) 
 	{
-		threadName = name;
-		this.stream = stream;
-		this.sock = sock;
 		this.swhl = swhl;
-		this.swName = swName;
-		this.topo = topo;
+		this.sock = sock;
+		this.stream = stream;
+		threadName = name;
 		this.start();
 	}	
 	
@@ -80,7 +75,7 @@ public class SwitchSetup implements Runnable{
 	
 	@Override
 	public void run(){
-		OVSwitch sw = null;
+		OFSwitch sw = null;
 		/*
 		 * Obtains OFMessages and writes them onto the stream of 
 		 * OFMessageAsync.
@@ -111,9 +106,10 @@ public class SwitchSetup implements Runnable{
 	         * and initializes it. If it existed before it gets restarted.
 	         */
 	        OFFeaturesReply fr = getFeaturesReply();
-	        sw = swhl.getSwitch("0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()));
+	        String datapathID = "0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId());
+	        sw = swhl.getSwitch(datapathID);
 	        if(sw==null){
-	        	sw = new OVSwitch(swName + "_Switch_" + sock.getRemoteAddress(),"0000000000000000".substring(Long.toHexString(fr.getDatapathId()).length())+ Long.toHexString(fr.getDatapathId()),stream,sock,fr,30,topo,swhl.getL2_Learning());
+	        	sw = new OFSwitch(datapathID + "_Switch_" + sock.getRemoteAddress(),datapathID,stream,sock,fr,30,swhl);
 	        }
 	        else{
 	        	sw.restart(sock,stream,fr);

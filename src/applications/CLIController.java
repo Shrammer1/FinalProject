@@ -3,14 +3,14 @@ package applications;
 import java.rmi.Naming;
 import java.util.ArrayList;
 
-import api.SwitchHandlerAPI;
-import views.CLI; 
+import api.ControllerAPI;
+import views.CLI;
 
 public class CLIController {
 
 	private CLI cliFrame;
-	private SwitchHandlerAPI controllerIntf;
-	private ArrayList<String> swLst;
+	private ControllerAPI controllerIntf;
+	ArrayList<String> swLst;
 	
 	public CLIController(CLI cliFrame) {
 		this.setCliFrame(cliFrame);
@@ -40,7 +40,7 @@ public class CLIController {
 			return;
 		}
 		try {
-			controllerIntf = (SwitchHandlerAPI) Naming.lookup("rmi://" + strings[1] + "/controller");
+			controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + strings[1] + "/controller");
 			println("Connected ...");
 		} catch (Exception e){
 			e.printStackTrace();
