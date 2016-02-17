@@ -2,7 +2,7 @@ package views;
 
 import java.util.Scanner;
 
-import controllers.CLIController;
+import applications.CLIController;
 
 public class CLI {
 	

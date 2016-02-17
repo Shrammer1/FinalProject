@@ -1,4 +1,4 @@
-package controllers;
+package applications;
 
 import java.rmi.Naming;
 import java.util.ArrayList;
