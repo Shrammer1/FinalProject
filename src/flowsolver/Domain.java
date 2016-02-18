@@ -13,8 +13,7 @@ public class Domain implements Serializable {
 	private ArrayList<byte[]> macList = new ArrayList<byte[]>();
 	
 	//***CONSTRUCTORS***
-	public Domain(ArrayList<Domain> subDomains, ArrayList<byte[]> networks,
-			ArrayList<byte[]> macList) {
+	public Domain(ArrayList<Domain> subDomains, ArrayList<byte[]> networks, ArrayList<byte[]> macList) {
 		this.subDomains = subDomains;
 		this.networks = networks;
 		this.macList = macList;
@@ -26,7 +25,12 @@ public class Domain implements Serializable {
 	}
 
 
-//***GETTERS AND SETTERS
+	public Domain() {
+		
+	}
+
+
+	//***GETTERS AND SETTERS
 	public ArrayList<Domain> getSubDomains() {
 		return subDomains;
 	}
@@ -48,6 +52,28 @@ public class Domain implements Serializable {
 	public static long getSerialversionuid() {
 		return serialVersionUID;
 	}
+	
+	
+	//Utility methods
+	
+	/**
+	 * Converts this domain and all child domains into an ArrayList of DomainEntry
+	 * @return
+	 */
+	public ArrayList<DomainEntry> toArray(){
+		return parseDomains(this);
+	}
+	
+	private ArrayList<DomainEntry> parseDomains(Domain head){
+		ArrayList<DomainEntry> retVal = new ArrayList<DomainEntry>();
+		retVal.add(new DomainEntry(head.networks, DomainType.IP));
+		retVal.add(new DomainEntry(head.macList, DomainType.Mac));
+		for(Domain domain:head.subDomains){
+			retVal.addAll(parseDomains(domain));
+		}
+		return retVal;
+	}
+	
 	
 	
 	

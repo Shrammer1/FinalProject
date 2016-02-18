@@ -11,6 +11,17 @@ public class TrafficClass implements Serializable{
 	private int udpPortDst;
 	private PortOpt portType;
 	
+	/**
+	 * Default TrafficClass. All traffic will match this
+	 */
+	public TrafficClass(){
+		portType = PortOpt.NONE;
+		this.tcpPortSrc = 0;
+		this.tcpPortDst = 0;
+		this.udpPortSrc = 0;
+		this.udpPortDst = 0;
+	}
+	
 	//***CONSTRUCTORS
 	public TrafficClass(int src, int dst, PortOpt portType) {
 		if (portType == PortOpt.TCP)	
@@ -40,7 +51,7 @@ public class TrafficClass implements Serializable{
 		return tcpPortSrc;
 	}
 	
-	public int getTvpPortDst() {
+	public int getTcpPortDst() {
 		return tcpPortDst;
 	}
 	
@@ -52,7 +63,7 @@ public class TrafficClass implements Serializable{
 		return udpPortDst;
 	}
 	
-	public PortOpt getportType() {
+	public PortOpt getPortType() {
 		return portType;
 	}
 	

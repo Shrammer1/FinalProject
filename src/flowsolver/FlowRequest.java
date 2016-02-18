@@ -12,8 +12,7 @@ public class FlowRequest implements Serializable{
 	private FlowAction fAction;
 	
 	//***CONSTRUCTORS	
-	public FlowRequest(Domain src, Domain dst, TrafficClass tClass,
-			int priority, FlowAction fAction) {
+	public FlowRequest(Domain src, Domain dst, TrafficClass tClass,int priority, FlowAction fAction) {
 		this.src = src;
 		this.dst = dst;
 		this.tClass = tClass;
@@ -21,8 +20,7 @@ public class FlowRequest implements Serializable{
 		this.fAction = fAction;
 	}
 	
-	public FlowRequest(Domain src, TrafficClass tClass, int priority,
-			FlowAction fAction) {
+	public FlowRequest(Domain src, TrafficClass tClass, int priority,FlowAction fAction) {
 		this.src = src;
 		this.tClass = tClass;
 		this.priority = priority;
@@ -42,10 +40,10 @@ public class FlowRequest implements Serializable{
 	public void setDst(Domain dst) {
 		this.dst = dst;
 	}
-	public TrafficClass gettClass() {
+	public TrafficClass getTrafficClass() {
 		return tClass;
 	}
-	public void settClass(TrafficClass tClass) {
+	public void setTrafficClass(TrafficClass tClass) {
 		this.tClass = tClass;
 	}
 	public int getPriority() {
@@ -54,10 +52,10 @@ public class FlowRequest implements Serializable{
 	public void setPriority(int priority) {
 		this.priority = priority;
 	}
-	public FlowAction getfAction() {
+	public FlowAction getFlowAction() {
 		return fAction;
 	}
-	public void setfAction(FlowAction fAction) {
+	public void setFlowAction(FlowAction fAction) {
 		this.fAction = fAction;
 	}
 	public static long getSerialversionuid() {

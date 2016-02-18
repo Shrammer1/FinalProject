@@ -1,6 +1,6 @@
 package flowsolver;
 
 public enum PortOpt {
-	TCP, UDP
+	TCP, UDP, NONE
 
 }
