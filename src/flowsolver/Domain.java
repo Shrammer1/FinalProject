@@ -57,8 +57,8 @@ public class Domain implements Serializable {
 	//Utility methods
 	
 	/**
-	 * Converts this domain and all child domains into an ArrayList of DomainEntry
-	 * @return
+	 * Converts this domain and all child domains into an ArrayList of DomainEntry objects
+	 * @return The ArrayList of DomainEntry objects
 	 */
 	public ArrayList<DomainEntry> toArray(){
 		return parseDomains(this);
@@ -67,7 +67,7 @@ public class Domain implements Serializable {
 	private ArrayList<DomainEntry> parseDomains(Domain head){
 		ArrayList<DomainEntry> retVal = new ArrayList<DomainEntry>();
 		retVal.add(new DomainEntry(head.networks, DomainType.IP));
-		retVal.add(new DomainEntry(head.macList, DomainType.Mac));
+		retVal.add(new DomainEntry(head.macList, DomainType.MAC));
 		for(Domain domain:head.subDomains){
 			retVal.addAll(parseDomains(domain));
 		}
