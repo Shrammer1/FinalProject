@@ -62,7 +62,7 @@ public class FlowSolver {
 			if(entry.getType() == DomainType.IP){
 				srcIPs.addAll(entry.getValues());
 			}
-			else if(entry.getType() == DomainType.Mac){
+			else if(entry.getType() == DomainType.MAC){
 				srcMACs.addAll(entry.getValues());
 			}
 		}
@@ -74,7 +74,7 @@ public class FlowSolver {
 				if(entry.getType() == DomainType.IP){
 					dstIPs.addAll(entry.getValues());
 				}
-				else if(entry.getType() == DomainType.Mac){
+				else if(entry.getType() == DomainType.MAC){
 					dstMACs.addAll(entry.getValues());
 				}
 			}
