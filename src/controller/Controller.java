@@ -90,7 +90,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		    
 		    //Instantiating and Starting the switch handler
 		    swhl = new SwitchHandler(threadName + "_SwitchHandler",this);
-		    topo = new TopologyMapper("TopogoyMapper",this);
+		    topo = new TopologyMapper("TopologyMapper",this);
 		    reg.rebind(threadName, this);
 		    swhl.start();
 		    topo.start();
