@@ -71,7 +71,7 @@ public class SwitchMapping{
 			flag = false;
 			for(HostMapping h2: this.hosts){
 				if(h2.equals(h1)){
-					if(h1.ip == 0 || h2.ip ==0){
+					if(h1.getIp() == 0 || h2.getIp() ==0){
 						int i =1;
 					}
 					

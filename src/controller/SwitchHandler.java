@@ -55,7 +55,25 @@ public class SwitchHandler implements Runnable {
 	private void abort(){
 		stop();
 	}
+
+	/**************************************************
+	 * PUBLIC METHODS
+	 **************************************************/
 	
+	public boolean getL2_Learning(){
+		return controller.getL2Learning();
+	}
+
+
+	public boolean setSwitchTimeout(String switchID, int newTimeout) throws RemoteException {
+		for(OFSwitch ovs : controller.getSwitches()){
+			if(ovs.getSwitchID().equals(switchID)){
+				ovs.setSwitchTimeout(newTimeout);
+				return true;
+			}
+		}
+		return false;
+	}	
 	/*
 	 * Method to obtain the list of all switches but allowing those waiting
 	 * on the object's monitor to continue using it. 
@@ -186,5 +204,5 @@ public class SwitchHandler implements Runnable {
 
 	public Controller getController() {
 		return controller;
-	}	
+	}
 }

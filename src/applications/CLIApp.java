@@ -1,10 +1,10 @@
 package applications;
 
-import views.CLIFrame;
+import views.CLI;
 
 public class CLIApp {
 	@SuppressWarnings("unused")
 	public static void main(String[] args){
-		CLIFrame cliFrame = new CLIFrame();
+		CLI cliFrame = new CLI();
 	}
 }

@@ -19,6 +19,40 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		return null;
 	}
 	
+	public OFSwitch getHost(int ipAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getIp() == ipAddress) return swMap.getSw();
+			}
+		}
+		return null;
+	}
+	public OFSwitch getHost(byte[] macAddress){
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				if(h.getMac() == macAddress) return swMap.getSw();
+			}
+		}
+		return null;
+	}
+	
+	public ArrayList<OFSwitch> getHosts(int ipAddress, int bits){
+		ArrayList<OFSwitch> retVal = new ArrayList<OFSwitch>();
+		for(SwitchMapping swMap:this){
+			for(HostMapping h: swMap.getHosts()){
+				int mask = -1 << (32 - bits);
+				if ((ipAddress & mask) == (h.getIp() & mask)) {
+				    retVal.add(swMap.getSw());
+				    break; //we've found at LEAST 1 host in the subnet on the switch so we don't need to check the rest.
+				}
+			}
+		}
+		return retVal;
+	}
+	
+	
+	
+	
 	public boolean remove(Object o){
 		//System.out.println("Removing host mapping: " + ((SwitchMapping) o).toString());
 		return super.remove(o);
@@ -29,7 +63,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		for(SwitchMapping map:this){
 			for(HostMapping h:map.getHosts()){
 				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.mac) + " : " + intToIP(h.ip) + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + intToIP(h.getIp()) + "\n";
 			}
 		}
 		return retval;

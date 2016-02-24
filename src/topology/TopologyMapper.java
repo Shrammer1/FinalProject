@@ -18,18 +18,11 @@ public class TopologyMapper implements Runnable{
 	private ArrayList<SwitchMapping> macTable = new ArrayList<SwitchMapping>();
 	private HostTable hosts = new HostTable();
 	private LinkTable links = new LinkTable();
-	private Controller controller;
 	
 	public TopologyMapper(String name,Controller controller) {
-		this.controller = controller;
 		this.switches = controller.getSwitches();
 		this.threadName = name;
 	}
-	
-	
-	//public SwitchMapping get
-	
-	
 	
 	
 	@Override
@@ -56,7 +49,18 @@ public class TopologyMapper implements Runnable{
 		
 	}
 	
-
+	public OFSwitch getMapping(byte[] macAddress){
+		return hosts.getHost(macAddress);
+	}
+	
+	public OFSwitch getMapping(int ipAddress){
+		return hosts.getHost(ipAddress);
+	}
+	
+	public ArrayList<OFSwitch> getMappings(int ipAddress, int mask){
+		return hosts.getHosts(ipAddress,mask);
+	}
+	
 	
 	public void stop(){
 		t.interrupt();

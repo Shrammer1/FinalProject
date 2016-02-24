@@ -544,4 +544,70 @@ public class OFSwitch implements Runnable{
 	         t.start ();
 	      }
 	}
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((featureReply == null) ? 0 : featureReply.hashCode());
+		result = prime * result + ((l == null) ? 0 : l.hashCode());
+		result = prime * result + ((nickname == null) ? 0 : nickname.hashCode());
+		result = prime * result + ((ports == null) ? 0 : ports.hashCode());
+		result = prime * result + ((registrations == null) ? 0 : registrations.hashCode());
+		result = prime * result + ((switchID == null) ? 0 : switchID.hashCode());
+		result = prime * result + switchTimeout;
+		result = prime * result + ((threadName == null) ? 0 : threadName.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		OFSwitch other = (OFSwitch) obj;
+		if (featureReply == null) {
+			if (other.featureReply != null)
+				return false;
+		} else if (!featureReply.equals(other.featureReply))
+			return false;
+		if (l == null) {
+			if (other.l != null)
+				return false;
+		} else if (!l.equals(other.l))
+			return false;
+		if (nickname == null) {
+			if (other.nickname != null)
+				return false;
+		} else if (!nickname.equals(other.nickname))
+			return false;
+		if (ports == null) {
+			if (other.ports != null)
+				return false;
+		} else if (!ports.equals(other.ports))
+			return false;
+		if (registrations == null) {
+			if (other.registrations != null)
+				return false;
+		} else if (!registrations.equals(other.registrations))
+			return false;
+		if (switchID == null) {
+			if (other.switchID != null)
+				return false;
+		} else if (!switchID.equals(other.switchID))
+			return false;
+		if (switchTimeout != other.switchTimeout)
+			return false;
+		if (threadName == null) {
+			if (other.threadName != null)
+				return false;
+		} else if (!threadName.equals(other.threadName))
+			return false;
+		return true;
+	}
+	
 }
