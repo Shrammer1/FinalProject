@@ -57,19 +57,14 @@ public class FlowEntry{
 	public boolean delFlowRequest(FlowRequest req){
 		return fRequest.remove(req);
 	}
-	
-	
-
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((fmod == null) ? 0 : fmod.hashCode());
-		result = prime * result + ((ofswitch == null) ? 0 : ofswitch.hashCode());
 		return result;
 	}
-
 
 	@Override
 	public boolean equals(Object obj) {
@@ -85,13 +80,13 @@ public class FlowEntry{
 				return false;
 		} else if (!fmod.equals(other.fmod))
 			return false;
-		if (ofswitch == null) {
-			if (other.ofswitch != null)
-				return false;
-		} else if (!ofswitch.equals(other.ofswitch))
-			return false;
 		return true;
 	}
+	
+	
+
+
+	
 
 
 	

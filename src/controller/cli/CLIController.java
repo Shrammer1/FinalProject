@@ -2,13 +2,14 @@ package controller.cli;
 
 import java.rmi.Naming;
 import java.util.ArrayList;
+import api.AppAPI;
 import api.ControllerAPI;
 import views.CLIFrame;
 
 public class CLIController {
 
 	private CLIFrame cliFrame;
-	private ControllerAPI controllerIntf;
+	private AppAPI appIntf;
 	ArrayList<String> swLst;
 	
 	public CLIController(CLIFrame cliFrame) {
@@ -33,13 +34,13 @@ public class CLIController {
 	}
 
 	private void show(String text) {
-		if(controllerIntf==null){
+		if(appIntf==null){
 			println("Not Connected ...");
 			return;
 		}
 		if(text.toLowerCase().equals("switches")){
 			try {
-				swLst = controllerIntf.listSwitches();
+				swLst = appIntf.listSwitches();
 				println("Switch List Contains: " + swLst.size() + " Entries ...");
 				for(String s : swLst){
 					println(s);
@@ -57,13 +58,15 @@ public class CLIController {
 	}
 
 	private void connect(String text) {
-		if(controllerIntf!=null){
+		if(appIntf!=null){
 			println("--------------");
 			println("Already Connected ...");
 			return;
 		}
 		try {
-			controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + text + "/controller");
+			ControllerAPI controller = (ControllerAPI) Naming.lookup("rmi://" + text + "/controller");
+			appIntf = (AppAPI) controller.register(0);
+			
 			println("Connected ...");
 		} catch (Exception e){
 			e.printStackTrace();

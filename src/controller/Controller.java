@@ -20,6 +20,7 @@ import org.openflow.io.OFMessageAsyncStream;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
 
+import api.AppAPI;
 import api.ControllerAPI;
 import topology.TopologyMapper;
 
@@ -47,6 +48,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	private TopologyMapper topo;
 	private SwitchHandler swhl;
 	private ArrayList<OFSwitch> switches = new ArrayList<OFSwitch>();
+	private ArrayList<Application> apps = new ArrayList<Application>();
 	
 	//boolean variable to control Layer 2 behavior
 	private boolean l2_learning;
@@ -79,7 +81,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	 **************************************************/
 	
 	//Controller listens on port 6001
-	@Override
+	
 	public void run(){
 		
 		try{
@@ -169,7 +171,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	        return buffer.toString();
 	    }
 	}
-
+	
 
 	public boolean getL2Learning() {
 		return l2_learning;
@@ -179,165 +181,25 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	public TopologyMapper getTopologyMapper() {
 		return topo;
 	}
+	public SwitchHandler getSwitchHandler(){
+		return swhl;
+	}
 
-
-	@Override
-	public String getSwitchFullName(String switchID) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.getSwitchFullName();
-			}
-		}
-		return null;
+	
+	public Object register(int priority) throws RemoteException {
+		Application newApp = new Application(priority,this);
+		apps.add(newApp);
+		return newApp;
 	}
 
 
 	@Override
-	public String getSwitchNickName(String switchID) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.getSwitchNickName();
-			}
+	public String listApplications() throws RemoteException {
+		String retVal = "";
+		for(Application app:apps){
+			retVal=retVal+app.getApplicationName()+"\n"; 
 		}
-		return null;
-	}
-
-
-	@Override
-	public void setSwitchNickName(String switchID, String name) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				sw.setSwitchNickName(name);
-				return;
-			}
-		}
-	}
-
-
-	@Override
-	public int getSwitchTimeout(String switchID) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.getSwitchTimeout();
-			}
-		}
-		return -1;
-	}
-
-
-	@Override
-	public void setSwitchTimeout(String switchID, int switchTimeout) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				sw.setSwitchTimeout(switchTimeout);
-				return;
-			}
-		}
-	}
-
-
-	@Override
-	public boolean register(String switchID, String id, OFType type) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.register(id, type);
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public boolean register(String switchID, String id, ArrayList<OFType> types) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.register(id, types);
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public boolean unregister(String switchID, String id, OFType type) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.unregister(id, type);
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public boolean unregister(String switchID, String id, ArrayList<OFType> types) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.unregister(id, types);
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public boolean isAlive(String switchID) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.isAlive();
-			}
-		}
-		return false;
-	}
-
-
-	@Override
-	public void sendMsg(String switchID, byte[] msg) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				sw.sendMsg(msg);
-				return;
-			}
-		}
-	}
-
-
-	@Override
-	public Queue<byte[]> getMessages(String switchID, String id) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.getMessages(id);
-			}
-		}
-		return null;
-	}
-
-
-	@Override
-	public byte[] getMessage(String switchID, String id) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.getMessage(id);
-			}
-		}
-		return null;
-	}
-
-
-	@Override
-	public String listPorts(String switchID) throws RemoteException {
-		for(OFSwitch sw:switches){
-			if(sw.getSwitchID().equals(switchID)){
-				return sw.listPorts();
-			}
-		}
-		return "";
-	}
-
-
-	@Override
-	public ArrayList<String> listSwitches() throws RemoteException {
-		return swhl.listSwitches();
+		return retVal;
 	}
 
 }

@@ -21,6 +21,10 @@ public class Server {
 			System.err.println(printUsage());
 			System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
 		}
+		
+		l2_learning = true; //change this line and the if statement to add back in l2 learning app functionaility
+		
+		/*
 		//this is going to have to be changed before the final version to incorporate all options
 		if(args.length==2){
 			if(args[1].equals("-l2")){
@@ -31,6 +35,7 @@ public class Server {
 				System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
 			}
 		}
+		*/
 		
 		//TEST CODE HERE ****************************************************************************************
 		

@@ -29,13 +29,12 @@ public class FlowSolver {
 		return true;
 	}
 	
-	private ArrayList<FlowEntry> buildFlows(FlowRequest request, int id){
+	private ArrayList<FlowEntry> buildFlows(FlowRequest request, int priority){
 		boolean wildcardDstFlag = false;
 		PortOpt portType;
 		int srcPortNum = 0;
 		int dstPortNum = 0; 
 		FlowAction action;
-		int priority;
 		
 		portType = request.getTrafficClass().getPortType();
 		if(portType == PortOpt.NONE){
@@ -59,8 +58,6 @@ public class FlowSolver {
 			//TODO: replace this with a throw exception
 			return null;
 		}
-		//add the requested priority to the applications id
-		priority = priority + id;
 		
 		//Step 1:
 		
