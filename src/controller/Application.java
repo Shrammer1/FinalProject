@@ -55,11 +55,11 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 		this.priority = priority;
 	}
 
-	public int getID() {
+	public int getID() throws RemoteException{
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setID(int id) {
 		this.id = id;
 	}
 
