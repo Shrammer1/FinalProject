@@ -96,13 +96,14 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 
 
 	
-	public void setSwitchTimeout(String switchID, int switchTimeout) throws RemoteException {
+	public boolean setSwitchTimeout(String switchID, int switchTimeout) throws RemoteException {
 		for(OFSwitch sw:controller.getSwitches()){
 			if(sw.getSwitchID().equals(switchID)){
 				sw.setSwitchTimeout(switchTimeout);
-				return;
+				return true;
 			}
 		}
+		return false;
 	}
 
 
