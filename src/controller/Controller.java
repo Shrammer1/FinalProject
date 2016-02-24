@@ -22,6 +22,7 @@ import org.openflow.protocol.factory.BasicFactory;
 
 import api.AppAPI;
 import api.ControllerAPI;
+import flowsolver.FlowSolver;
 import topology.TopologyMapper;
 
 //Controller runnable class
@@ -47,6 +48,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	private String threadName;
 	private TopologyMapper topo;
 	private SwitchHandler swhl;
+	private FlowSolver fsolv;
 	private ArrayList<OFSwitch> switches = new ArrayList<OFSwitch>();
 	private ArrayList<Application> apps = new ArrayList<Application>();
 	
@@ -93,6 +95,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		    //Instantiating and Starting the switch handler
 		    swhl = new SwitchHandler(threadName + "_SwitchHandler",this);
 		    topo = new TopologyMapper("TopologyMapper",this);
+		    fsolv = new FlowSolver(this);
 		    reg.rebind(threadName, this);
 		    swhl.start();
 		    topo.start();
@@ -176,7 +179,10 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	public boolean getL2Learning() {
 		return l2_learning;
 	}
-
+	
+	public FlowSolver getFlowSolver(){
+		return fsolv;
+	}
 
 	public TopologyMapper getTopologyMapper() {
 		return topo;

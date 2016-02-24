@@ -6,15 +6,15 @@ import controller.OFSwitch;
 
 public class FlowEntry{
 	
-	private OFFlowMod fmod;
+	private OFFlowMod FlowMod;
 	private boolean active;
-	private OFSwitch ofswitch;
+	private ArrayList<OFSwitch> ofswitch = new ArrayList<OFSwitch>();
 	private ArrayList<FlowRequest> fRequest = new ArrayList<FlowRequest>();
 	
 	//***CONSTRUCTORS
-	public FlowEntry(OFFlowMod fmod, boolean active, OFSwitch ofswitch,
+	public FlowEntry(OFFlowMod FlowMod, boolean active, ArrayList<OFSwitch> ofswitch,
 			ArrayList<FlowRequest> fRequest) {
-		this.fmod = fmod;
+		this.FlowMod = FlowMod;
 		this.active = active;
 		this.ofswitch = ofswitch;
 		this.fRequest = fRequest;
@@ -25,12 +25,12 @@ public class FlowEntry{
 	}
 	
 	//***SETTERS AND GETTERS
-	public OFFlowMod getFmod() {
-		return fmod;
+	public OFFlowMod getFlowMod() {
+		return FlowMod;
 	}
 	
-	public void setFmod(OFFlowMod fmod) {
-		this.fmod = fmod;
+	public void setFlowMod(OFFlowMod FlowMod) {
+		this.FlowMod = FlowMod;
 	}
 	public boolean isActive() {
 		return active;
@@ -38,11 +38,14 @@ public class FlowEntry{
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-	public OFSwitch getSwitch() {
+	public ArrayList<OFSwitch> getSwitch() {
 		return ofswitch;
 	}
-	public void setSwitch(OFSwitch switch1) {
+	public void setSwitch(ArrayList<OFSwitch> switch1) {
 		ofswitch = switch1;
+	}
+	public void addSwitch(OFSwitch switch1) {
+		ofswitch.add(switch1);
 	}
 	public ArrayList<FlowRequest> getFlowRequest() {
 		return fRequest;
@@ -62,7 +65,7 @@ public class FlowEntry{
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((fmod == null) ? 0 : fmod.hashCode());
+		result = prime * result + ((FlowMod == null) ? 0 : FlowMod.hashCode());
 		return result;
 	}
 
@@ -75,10 +78,10 @@ public class FlowEntry{
 		if (getClass() != obj.getClass())
 			return false;
 		FlowEntry other = (FlowEntry) obj;
-		if (fmod == null) {
-			if (other.fmod != null)
+		if (FlowMod == null) {
+			if (other.FlowMod != null)
 				return false;
-		} else if (!fmod.equals(other.fmod))
+		} else if (!FlowMod.equals(other.FlowMod))
 			return false;
 		return true;
 	}

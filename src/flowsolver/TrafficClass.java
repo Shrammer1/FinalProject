@@ -5,69 +5,56 @@ import java.io.Serializable;
 public class TrafficClass implements Serializable{
 
 	private static final long serialVersionUID = -7272204048173591835L;
-	private int tcpPortSrc;
-	private int tcpPortDst;
-	private int udpPortSrc;
-	private int udpPortDst;
-	private PortOpt portType;
+	private short srcPort;
+	private short dstPort;
+	private byte portType;
 	
 	/**
 	 * Default TrafficClass. All traffic will match this
 	 */
 	public TrafficClass(){
-		portType = PortOpt.NONE;
-		this.tcpPortSrc = 0;
-		this.tcpPortDst = 0;
-		this.udpPortSrc = 0;
-		this.udpPortDst = 0;
+		this.srcPort=0;
+		this.dstPort=0;
+		this.portType=0;
 	}
 	
 	//***CONSTRUCTORS
-	public TrafficClass(int src, int dst, PortOpt portType) {
-		if (portType == PortOpt.TCP)	
-		{
-			this.tcpPortSrc = src;
-			this.tcpPortDst = dst;
-		}
-		else if (portType == PortOpt.UDP)
-		{
-			this.udpPortSrc = src;
-			this.udpPortDst = dst;
-		}
-		else
-		{
-			this.tcpPortSrc = 0;
-			this.tcpPortDst = 0;
-			this.udpPortSrc = 0;
-			this.udpPortDst = 0;
-		}
+	public TrafficClass(short src, short dst, byte portType) {
+		this.srcPort=src;
+		this.dstPort=dst;
 		
 		this.portType = portType;
 	}
-
+	
 	
 	//***GETTERS
-	public int getTcpPortSrc() {
-		return tcpPortSrc;
-	}
-	
-	public int getTcpPortDst() {
-		return tcpPortDst;
-	}
-	
-	public int getUdpPortSrc() {
-		return udpPortSrc;
-	}
-	
-	public int getUdpPortDst() {
-		return udpPortDst;
-	}
-	
-	public PortOpt getPortType() {
-		return portType;
-	}
+
 	
 	public static long getSerialversionuid() {
 		return serialVersionUID;
+	}
+
+	public short getSrcPort() {
+		return srcPort;
+	}
+
+	public void setSrcPort(short srcPort) {
+		this.srcPort = srcPort;
+	}
+
+	public short getDstPort() {
+		return dstPort;
+	}
+
+	public void setDstPort(short dstPort) {
+		this.dstPort = dstPort;
+	}
+
+	public byte getPortType() {
+		return portType;
+	}
+
+	public void setPortType(byte portType) {
+		this.portType = portType;
 	}
 }

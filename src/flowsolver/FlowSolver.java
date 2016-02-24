@@ -2,62 +2,66 @@ package flowsolver;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.List;
 
+import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.OFPort;
+import org.openflow.protocol.action.OFAction;
+import org.openflow.protocol.action.OFActionOutput;
+import org.openflow.protocol.instruction.OFInstruction;
+import org.openflow.protocol.instruction.OFInstructionApplyActions;
+import org.openflow.protocol.instruction.OFInstructionGotoTable;
+
+import controller.Application;
 import controller.Controller;
 import controller.OFSwitch;
 
 public class FlowSolver {
 	private Controller controller;
 	
+	private FlowEntryTable flows = new FlowEntryTable();
+	
 	public FlowSolver(Controller ctrl){
 		this.controller = ctrl;
 	}
 	
-	public boolean requestAddFlow(FlowRequest request, int id){
+	public boolean requestAddFlow(FlowRequest request, Application app){
 		
-		//TODO: most of this code should be ported out to a separate method so its reusable, the only stuff that should stay in here should be actually 
-		//determining which FlowEntry objects to keep and which to update
 		
 		//Step 1: break the request down into all the sub components
 		//Step 2: determine the flows needed to build all the FlowEntry objects
 		//Step 3: add the FlowEntry objects to the FlowEntryTable, updating the FlowRequest field where appropriate and only adding new FlowEntry objects when there are no duplicates (done via HashMap)
 		
-		ArrayList<FlowEntry> flows = buildFlows(request, id);
+		
+		ArrayList<FlowEntry> flows = buildFlows(request, app.getPriority() + request.getPriority());
+		
+		//TODO: add code that properly updates the FlowEntryTable and sends out new flows
+		
+		//This magical code takes a sledge hammer to the controller and forces out flow mods, its for testing only
+				/*
 		if(flows == null) return false;
-		
-		
+		for(FlowEntry e:flows){
+			e.getSwitch().get(0).sendMsg(e.getFlowMod());
+		}
+		*/
 		return true;
 	}
 	
 	private ArrayList<FlowEntry> buildFlows(FlowRequest request, int priority){
 		boolean wildcardDstFlag = false;
-		PortOpt portType;
-		int srcPortNum = 0;
-		int dstPortNum = 0; 
-		FlowAction action;
+		byte portType;
+		short srcPortNum = 0;
+		short dstPortNum = 0;
 		
 		portType = request.getTrafficClass().getPortType();
-		if(portType == PortOpt.NONE){
-			srcPortNum = 0;
-			dstPortNum = 0; 
-		}
-		else if(portType == PortOpt.TCP){
-			srcPortNum = request.getTrafficClass().getTcpPortSrc();
-			dstPortNum = request.getTrafficClass().getTcpPortDst();
-		}
-		else if(portType == PortOpt.UDP){
-			srcPortNum = request.getTrafficClass().getUdpPortSrc();
-			dstPortNum = request.getTrafficClass().getUdpPortDst();
-		}
+		srcPortNum = request.getTrafficClass().getSrcPort();
+		dstPortNum = request.getTrafficClass().getDstPort();
 		
-		action = request.getFlowAction();
-		priority = request.getPriority();
+		
 		
 		//if the application asks for a priority that is out of the valid range reject the flow.
-		if(priority < 0 || priority > 100){
-			//TODO: replace this with a throw exception
-			return null;
-		}
+		
 		
 		//Step 1:
 		
@@ -76,21 +80,27 @@ public class FlowSolver {
 			}
 		}
 		
-		listOfDomainEntries = request.getDst().toArray();
-		//if there are 1 or more domain entries in the dst field load them, else set the wildcard flag
-		if(listOfDomainEntries.size() != 0){
-			for(DomainEntry entry:listOfDomainEntries){
-				if(entry.getType() == DomainType.IP){
-					dstIPs.addAll(entry.getValues());
+		if(request.getDst()!=null){
+			listOfDomainEntries = request.getDst().toArray();
+			//if there are 1 or more domain entries in the dst field load them, else set the wildcard flag
+			if(listOfDomainEntries.size() != 0){
+				for(DomainEntry entry:listOfDomainEntries){
+					if(entry.getType() == DomainType.IP){
+						dstIPs.addAll(entry.getValues());
+					}
+					else if(entry.getType() == DomainType.MAC){
+						dstMACs.addAll(entry.getValues());
+					}
 				}
-				else if(entry.getType() == DomainType.MAC){
-					dstMACs.addAll(entry.getValues());
-				}
+			}
+			else{
+				wildcardDstFlag=true;
 			}
 		}
 		else{
 			wildcardDstFlag=true;
 		}
+		
 		
 		
 		//Step 2:
@@ -104,10 +114,10 @@ public class FlowSolver {
 		//first create flow entries for IPs then MACs
 		if(wildcardDstFlag){
 			if(srcIPs.size()!=0){
-				flows.addAll(generateFlows(srcIPs, priority));
+				flows.addAll(generateFlows(srcIPs,request, priority));
 			}
 			if(srcMACs.size() !=0){
-				
+				flows.addAll(generateFlows(srcMACs,request, priority));
 			}
 		}
 		else{
@@ -126,6 +136,20 @@ public class FlowSolver {
 				if(dstMACs.size() !=0){
 					
 				}
+			}
+		}
+		
+		if(portType!=0){
+			for(FlowEntry entry:flows){
+				OFMatch match = entry.getFlowMod().getMatch();
+				match.setDataLayerType((short) 0x0800);
+				if(srcPortNum!=0){
+					match.setTransportSource(portType, srcPortNum);
+				}
+				if(dstPortNum!=0){
+					match.setTransportDestination(portType, dstPortNum);
+				}
+				
 			}
 		}
 		
@@ -142,40 +166,116 @@ public class FlowSolver {
 	 * @param priority Priority of the FlowEntry
 	 * @return The resulting ArayList of FlowEntry objects
 	 */
-	private ArrayList<FlowEntry> generateFlows(ArrayList<byte[]> srcList, int priority){
+	private ArrayList<FlowEntry> generateFlows(ArrayList<byte[]> srcList,FlowRequest request, int priority){
 		ArrayList<FlowEntry> retVal = new ArrayList<FlowEntry>(); 
 		boolean srcIsMAC = false;
 		if(srcList.get(0).length == 6){
 			srcIsMAC = true;
 		}
-		
 		if(srcIsMAC){
 			for(byte[] src:srcList){
 				FlowEntry entry = new FlowEntry();
 				entry.setActive(false);
-				entry.setSwitch(controller.getTopologyMapper().getMapping(src));
-				//TODO: build the OFFlowMod
+				entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+				
+				OFFlowMod mod = new OFFlowMod();
+				OFMatch match = new OFMatch();
+				mod.setCommand((byte) 0);
+				mod.setPriority((short) priority);
+				mod.setTableId((byte) 0);
+	            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+	            
+	            if(request.getFlowAction()==FlowAction.ALLOW){
+	            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+		            instruction.setTableId((byte) 1);
+	            }
+	            else if(request.getFlowAction()==FlowAction.DROP){
+	            	OFActionOutput action = new OFActionOutput();
+	                action.setMaxLength((short) 0);
+	                action.setPort(OFPort.OFPP_ALL);
+	            	List<OFAction> actions = new ArrayList<OFAction>();
+	                actions.add(action);
+	                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+	                instructions.add(instruction);
+	            }
+	            mod.setInstructions(instructions);
+	            match.setDataLayerSource(src);
+	            mod.setMatch(match);
+	            entry.setFlowMod(mod);
+	            retVal.add(entry);
 			}
 		}
 		else{
 			for(byte[] src:srcList){
-				FlowEntry entry = new FlowEntry();
-				entry.setActive(false);
 				if(src.length == 4){
+					FlowEntry entry = new FlowEntry();
+					entry.setActive(false);
 					//src is a single IP
-					entry.setSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
-					//TODO: build the OFFlowMod
+					entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+					OFFlowMod mod = new OFFlowMod();
+					OFMatch match = new OFMatch();
+					mod.setCommand((byte) 0);
+					mod.setPriority((short) priority);
+					mod.setTableId((byte) 0);
+		            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+		            
+		            if(request.getFlowAction()==FlowAction.ALLOW){
+		            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+			            instruction.setTableId((byte) 1);
+		            }
+		            else if(request.getFlowAction()==FlowAction.DROP){
+		            	OFActionOutput action = new OFActionOutput();
+		                action.setMaxLength((short) 0);
+		                action.setPort(OFPort.OFPP_ALL);
+		            	List<OFAction> actions = new ArrayList<OFAction>();
+		                actions.add(action);
+		                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+		                instructions.add(instruction);
+		            }
+		            mod.setInstructions(instructions);
+		            match.setDataLayerType((short) 0x0800);
+		            match.setNetworkSource(ByteBuffer.wrap(src).getInt());
+		            mod.setMatch(match);
+		            entry.setFlowMod(mod);
+		            retVal.add(entry);
 				}
 				else if(src.length == 5){
 					ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
-					//TODO: build the OFFlowMod
+					for(OFSwitch sw:switches){
+						FlowEntry entry = new FlowEntry();
+						entry.setActive(false);
+						//src is a single IP
+						entry.addSwitch(sw);
+						OFFlowMod mod = new OFFlowMod();
+						OFMatch match = new OFMatch();
+						mod.setCommand((byte) 0);
+						mod.setPriority((short) priority);
+						mod.setTableId((byte) 0);
+			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+			            
+			            if(request.getFlowAction()==FlowAction.ALLOW){
+			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+				            instruction.setTableId((byte) 1);
+			            }
+			            else if(request.getFlowAction()==FlowAction.DROP){
+			            	OFActionOutput action = new OFActionOutput();
+			                action.setMaxLength((short) 0);
+			                action.setPort(OFPort.OFPP_ALL);
+			            	List<OFAction> actions = new ArrayList<OFAction>();
+			                actions.add(action);
+			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+			                instructions.add(instruction);
+			            }
+			            mod.setInstructions(instructions);
+			            match.setDataLayerType((short) 0x0800);
+			            match.setNetworkSourceMask(ByteBuffer.wrap(src).getInt(), src[4]);			            
+			            mod.setMatch(match);
+			            entry.setFlowMod(mod);
+			            retVal.add(entry);
+					}
 				}
 			}
 		}
-		
-		
-		
-		
 		return retVal;
 	}
 	
@@ -186,7 +286,7 @@ public class FlowSolver {
 	 * @param priority Priority of the FlowEntry
 	 * @return The resulting ArayList of FlowEntry objects
 	 */
-	private ArrayList<FlowEntry> generateFlows(ArrayList<byte[]> srcList,ArrayList<byte[]> dstList, int priority){
+	private ArrayList<FlowEntry> generateFlows(ArrayList<byte[]> srcList,ArrayList<byte[]> dstList,FlowRequest request, int priority){
 		boolean srcIsMAC = false;
 		boolean dstIsMAC = false;
 		if(srcList.get(0).length == 6){

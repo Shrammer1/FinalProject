@@ -159,6 +159,14 @@ public class OFSwitch implements Runnable{
 		this.nickname = name;
 	}
 	
+	public void sendMsg(OFMessage msg){
+		try {
+			sthl.sendMsg(msg);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 	
 	public void sendMsg(byte[] msgs){
 		List<OFMessage> l = factory.parseMessages(ByteBuffer.wrap(msgs));

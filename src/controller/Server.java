@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import flowsolver.Domain;
 import flowsolver.DomainEntry;
 import flowsolver.DomainType;
+import flowsolver.FlowAction;
+import flowsolver.FlowRequest;
+import flowsolver.TrafficClass;
 
 public class Server {
 
@@ -24,6 +27,18 @@ public class Server {
 		
 		l2_learning = true; //change this line and the if statement to add back in l2 learning app functionaility
 		
+		//Port 1099 for RMI registry functionality
+		Controller controller = null;
+		try {
+			controller = new Controller(args[0], 1099,l2_learning);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+		
+		//Starting a Controller Thread
+		controller.start();
+		
+		
 		/*
 		//this is going to have to be changed before the final version to incorporate all options
 		if(args.length==2){
@@ -39,111 +54,30 @@ public class Server {
 		
 		//TEST CODE HERE ****************************************************************************************
 		
-		/*
-		ArrayList<byte[]> networks = new ArrayList<byte[]>();
-		ByteBuffer n = ByteBuffer.allocate(5);
-		n.put((byte) 127);
-		n.put((byte) 0);
-		n.put((byte) 0);
-		n.put((byte) 1);
-		n.put((byte) 32);
-		networks.add(n.array());
-		
-		n = ByteBuffer.allocate(5);
-		n.put((byte) 127);
-		n.put((byte) 0);
-		n.put((byte) 0);
-		n.put((byte) 2);
-		n.put((byte) 32);
-		networks.add(n.array());
-		
-		n = ByteBuffer.allocate(5);
-		n.put((byte) 127);
-		n.put((byte) 0);
-		n.put((byte) 0);
-		n.put((byte) 129);
-		n.put((byte) 25);
-		networks.add(n.array());
-		
-		ArrayList<byte[]> macList = new ArrayList<byte[]>();
-		ByteBuffer mac = ByteBuffer.allocate(6);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 12);
-		mac.put((byte) 15);
-		mac.put((byte) 23);
-		macList.add(n.array());
-		
-		mac = ByteBuffer.allocate(6);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 15);
-		mac.put((byte) 15);
-		mac.put((byte) 1);
-		macList.add(n.array());
-		
 		Domain top = new Domain();
-		top.setNetworks(networks);
-		top.setMacList(macList);
-		
-		Domain sub = new Domain();
-		
-		macList = new ArrayList<byte[]>();
-		mac = ByteBuffer.allocate(6);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 0);
-		mac.put((byte) 12);
-		mac.put((byte) 15);
-		mac.put((byte) 23);
-		macList.add(n.array());
-		
-		networks = new ArrayList<byte[]>();
-		n = ByteBuffer.allocate(5);
-		n.put((byte) 127);
-		n.put((byte) 0);
-		n.put((byte) 0);
+		ArrayList<byte[]> networks = new ArrayList<byte[]>();
+		ByteBuffer n = ByteBuffer.allocate(4);
+		n.put((byte) 172);
+		n.put((byte) 16);
 		n.put((byte) 1);
-		n.put((byte) 32);
+		n.put((byte) 101);
 		networks.add(n.array());
+		top.setNetworks(networks);
 		
-		sub.setMacList(macList);
-		sub.setNetworks(networks);
+		TrafficClass tclass = new TrafficClass();
 		
-		ArrayList<Domain> l = new ArrayList<Domain>();
-		l.add(sub);
+		FlowRequest fReq = new FlowRequest(top,tclass , 1, FlowAction.ALLOW);
 		
-		top.setSubDomains(l);
-		
-		ArrayList<DomainEntry> result = top.toArray();
-		ArrayList<byte[]> ips = new ArrayList<byte[]>();
-		ArrayList<byte[]> macs = new ArrayList<byte[]>();
-		
-		for(DomainEntry entry:result){
-			if(entry.getType() == DomainType.IP){
-				ips.addAll(entry.getValues());
-			}
-			else if(entry.getType() == DomainType.Mac){
-				macs.addAll(entry.getValues());
-			}
-		}
-		
-		
-		*/
-		//END OF TEST CODE **************************************************************************************
-		
-		//Port 1099 for RMI registry functionality
-		Controller controller = null;
+		Application app = null;
 		try {
-			controller = new Controller(args[0], 1099,l2_learning);
+			app = new Application(100, controller);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
 		
-		//Starting a Controller Thread
-		controller.start();
+		controller.getFlowSolver().requestAddFlow(fReq, app);
+		
+		//END OF TEST CODE **************************************************************************************
 		
 	}
 	

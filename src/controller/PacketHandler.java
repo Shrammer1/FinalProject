@@ -143,7 +143,7 @@ public class PacketHandler implements Runnable{
             match.setDataLayerDestination(pktIn.getDataLayerDestination());
             match.setDataLayerSource(pktIn.getDataLayerSource());
             fm.setMatch(match);
-            
+            fm.setTableId((byte) 1);
             fm.setPriority((short) 1);
             OFActionOutput action = new OFActionOutput();
             action.setMaxLength((short) 0);
