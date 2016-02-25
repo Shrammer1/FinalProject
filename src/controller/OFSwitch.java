@@ -36,6 +36,7 @@ import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.factory.BasicFactory;
 import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
+import org.openflow.protocol.instruction.OFInstructionGotoTable;
 import org.openflow.protocol.statistics.OFPortDescription;
 import org.openflow.protocol.statistics.OFStatistics;
 import org.openflow.protocol.statistics.OFStatisticsType;
@@ -324,8 +325,20 @@ public class OFSwitch implements Runnable{
         //Install default rule required by OF1.3
         fm.setCommand(OFFlowMod.OFPFC_ADD);
         fm.setPriority((short) 0);
+        fm.setTableId((byte)1);
         OFActionOutput action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER); 
         fm.setInstructions(Collections.singletonList((OFInstruction)new OFInstructionApplyActions().setActions(Collections.singletonList((OFAction)action))));
+        try {
+			sthl.sendMsg(fm);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
+        
+        fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
+        fm.setCommand(OFFlowMod.OFPFC_ADD);
+        fm.setPriority((short) 0);
+        fm.setTableId((byte)0);
+        fm.setInstructions(Collections.singletonList((OFInstruction)new OFInstructionGotoTable((byte) 1)));
         try {
 			sthl.sendMsg(fm);
 		} catch (IOException e1) {

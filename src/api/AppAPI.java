@@ -4,6 +4,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
+import flowsolver.FlowRequest;
+
 public interface AppAPI extends Remote{
 	public String getSwitchFullName(String switchID) throws RemoteException;
 	public String getSwitchNickName(String switchID) throws RemoteException;
@@ -15,5 +17,8 @@ public interface AppAPI extends Remote{
 	public ArrayList<String> listSwitches() throws RemoteException;
 	
 	public int getID() throws RemoteException;
+	
+	public boolean requestAddFlow(FlowRequest request) throws RemoteException;
+	public boolean requestDelFlow(FlowRequest request) throws RemoteException;
 	
 }

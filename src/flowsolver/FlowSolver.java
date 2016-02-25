@@ -6,9 +6,12 @@ import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.OFOXMField;
+import org.openflow.protocol.OFOXMFieldType;
 import org.openflow.protocol.OFPort;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
+import org.openflow.protocol.action.OFActionType;
 import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.protocol.instruction.OFInstructionGotoTable;
@@ -39,14 +42,27 @@ public class FlowSolver {
 		//TODO: add code that properly updates the FlowEntryTable and sends out new flows
 		
 		//This magical code takes a sledge hammer to the controller and forces out flow mods, its for testing only
-				/*
 		if(flows == null) return false;
 		for(FlowEntry e:flows){
 			e.getSwitch().get(0).sendMsg(e.getFlowMod());
 		}
-		*/
+		
 		return true;
 	}
+	
+	public boolean requestDelFlow(FlowRequest request, Application app){
+		ArrayList<FlowEntry> flows = buildFlows(request, app.getPriority() + request.getPriority());
+		for(FlowEntry flow:flows){
+			flow.getFlowMod().setCommand((byte) 0x03);
+		}
+		
+		for(FlowEntry e:flows){
+			e.getSwitch().get(0).sendMsg(e.getFlowMod());
+		}
+		
+		return false;
+	}
+	
 	
 	private ArrayList<FlowEntry> buildFlows(FlowRequest request, int priority){
 		boolean wildcardDstFlag = false;
@@ -111,7 +127,6 @@ public class FlowSolver {
 		}
 		
 		ArrayList<FlowEntry> flows = new ArrayList<FlowEntry>();
-		//first create flow entries for IPs then MACs
 		if(wildcardDstFlag){
 			if(srcIPs.size()!=0){
 				flows.addAll(generateFlows(srcIPs,request, priority));
@@ -123,18 +138,18 @@ public class FlowSolver {
 		else{
 			if(srcIPs.size()!=0){
 				if(dstIPs.size()!=0){
-					
+					flows.addAll(generateFlows(srcIPs,dstIPs,request, priority));
 				}
 				if(dstMACs.size() !=0){
-					
+					flows.addAll(generateFlows(srcIPs,dstMACs,request, priority));
 				}
 			}
 			if(srcMACs.size() !=0){
 				if(dstIPs.size()!=0){
-					
+					flows.addAll(generateFlows(srcMACs,dstIPs,request, priority));
 				}
 				if(dstMACs.size() !=0){
-					
+					flows.addAll(generateFlows(srcMACs,dstMACs,request, priority));
 				}
 			}
 		}
@@ -188,11 +203,12 @@ public class FlowSolver {
 	            if(request.getFlowAction()==FlowAction.ALLOW){
 	            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
 		            instruction.setTableId((byte) 1);
+		            instructions.add(instruction);
 	            }
 	            else if(request.getFlowAction()==FlowAction.DROP){
 	            	OFActionOutput action = new OFActionOutput();
 	                action.setMaxLength((short) 0);
-	                action.setPort(OFPort.OFPP_ALL);
+	                
 	            	List<OFAction> actions = new ArrayList<OFAction>();
 	                actions.add(action);
 	                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
@@ -222,11 +238,12 @@ public class FlowSolver {
 		            if(request.getFlowAction()==FlowAction.ALLOW){
 		            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
 			            instruction.setTableId((byte) 1);
+			            instructions.add(instruction);
 		            }
 		            else if(request.getFlowAction()==FlowAction.DROP){
 		            	OFActionOutput action = new OFActionOutput();
 		                action.setMaxLength((short) 0);
-		                action.setPort(OFPort.OFPP_ALL);
+		                
 		            	List<OFAction> actions = new ArrayList<OFAction>();
 		                actions.add(action);
 		                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
@@ -241,38 +258,40 @@ public class FlowSolver {
 				}
 				else if(src.length == 5){
 					ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
+					FlowEntry entry = new FlowEntry();
+					entry.setActive(false);
 					for(OFSwitch sw:switches){
-						FlowEntry entry = new FlowEntry();
-						entry.setActive(false);
-						//src is a single IP
 						entry.addSwitch(sw);
-						OFFlowMod mod = new OFFlowMod();
-						OFMatch match = new OFMatch();
-						mod.setCommand((byte) 0);
-						mod.setPriority((short) priority);
-						mod.setTableId((byte) 0);
-			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
-			            
-			            if(request.getFlowAction()==FlowAction.ALLOW){
-			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
-				            instruction.setTableId((byte) 1);
-			            }
-			            else if(request.getFlowAction()==FlowAction.DROP){
-			            	OFActionOutput action = new OFActionOutput();
-			                action.setMaxLength((short) 0);
-			                action.setPort(OFPort.OFPP_ALL);
-			            	List<OFAction> actions = new ArrayList<OFAction>();
-			                actions.add(action);
-			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
-			                instructions.add(instruction);
-			            }
-			            mod.setInstructions(instructions);
-			            match.setDataLayerType((short) 0x0800);
-			            match.setNetworkSourceMask(ByteBuffer.wrap(src).getInt(), src[4]);			            
-			            mod.setMatch(match);
-			            entry.setFlowMod(mod);
-			            retVal.add(entry);
 					}
+					//src is a single IP
+					OFFlowMod mod = new OFFlowMod();
+					OFMatch match = new OFMatch();
+					mod.setCommand((byte) 0);
+					mod.setPriority((short) priority);
+					mod.setTableId((byte) 0);
+		            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+		            
+		            if(request.getFlowAction()==FlowAction.ALLOW){
+		            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+			            instruction.setTableId((byte) 1);
+			            instructions.add(instruction);
+		            }
+		            else if(request.getFlowAction()==FlowAction.DROP){
+		            	OFActionOutput action = new OFActionOutput();
+		                action.setMaxLength((short) 0);
+		                
+		            	List<OFAction> actions = new ArrayList<OFAction>();
+		                actions.add(action);
+		                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+		                instructions.add(instruction);
+		            }
+		            mod.setInstructions(instructions);
+		            match.setDataLayerType((short) 0x0800);
+		            int mask = -1 << (32 - src[4]);
+		            match.setNetworkSourceMask(ByteBuffer.wrap(src).getInt(), mask);
+		            mod.setMatch(match);
+		            entry.setFlowMod(mod);
+		            retVal.add(entry);
 				}
 			}
 		}
@@ -287,6 +306,7 @@ public class FlowSolver {
 	 * @return The resulting ArayList of FlowEntry objects
 	 */
 	private ArrayList<FlowEntry> generateFlows(ArrayList<byte[]> srcList,ArrayList<byte[]> dstList,FlowRequest request, int priority){
+		ArrayList<FlowEntry> retVal = new ArrayList<FlowEntry>();
 		boolean srcIsMAC = false;
 		boolean dstIsMAC = false;
 		if(srcList.get(0).length == 6){
@@ -296,17 +316,208 @@ public class FlowSolver {
 			srcIsMAC = true;
 		}
 		
+		if(srcIsMAC){
+			if(dstIsMAC){
+				//source and dest are MACs
+				for(byte[] src:srcList){
+					for(byte[] dst:dstList){
+						FlowEntry entry = new FlowEntry();
+						entry.setActive(false);
+						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+						
+						OFFlowMod mod = new OFFlowMod();
+						OFMatch match = new OFMatch();
+						mod.setCommand((byte) 0);
+						mod.setPriority((short) priority);
+						mod.setTableId((byte) 0);
+			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+			            
+			            if(request.getFlowAction()==FlowAction.ALLOW){
+			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+				            instruction.setTableId((byte) 1);
+				            instructions.add(instruction);
+			            }
+			            else if(request.getFlowAction()==FlowAction.DROP){
+			            	OFActionOutput action = new OFActionOutput();
+			                action.setMaxLength((short) 0);
+			                
+			            	List<OFAction> actions = new ArrayList<OFAction>();
+			                actions.add(action);
+			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+			                instructions.add(instruction);
+			            }
+			            mod.setInstructions(instructions);
+			            match.setDataLayerSource(src);
+			            match.setDataLayerDestination(dst);
+			            mod.setMatch(match);
+			            entry.setFlowMod(mod);
+			            retVal.add(entry);
+					}
+				}
+				
+			}
+			else{
+				//src is mac and dst is ip
+				for(byte[] src:srcList){
+					for(byte[] dst:dstList){
+						FlowEntry entry = new FlowEntry();
+						entry.setActive(false);
+						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+						
+						OFFlowMod mod = new OFFlowMod();
+						OFMatch match = new OFMatch();
+						mod.setCommand((byte) 0);
+						mod.setPriority((short) priority);
+						mod.setTableId((byte) 0);
+			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+			            
+			            if(request.getFlowAction()==FlowAction.ALLOW){
+			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+				            instruction.setTableId((byte) 1);
+				            instructions.add(instruction);
+			            }
+			            else if(request.getFlowAction()==FlowAction.DROP){
+			            	OFActionOutput action = new OFActionOutput();
+			                action.setMaxLength((short) 0);
+			                
+			            	List<OFAction> actions = new ArrayList<OFAction>();
+			                actions.add(action);
+			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+			                instructions.add(instruction);
+			            }
+			            mod.setInstructions(instructions);
+			            match.setDataLayerSource(src);
+			            match.setDataLayerType((short) 0x0800);
+			            if(dst.length==5){
+			            	int mask = -1 << (32 - dst[4]);
+			            	match.setNetworkDestinationMask(ByteBuffer.wrap(dst).getInt(), mask);
+			            }
+			            else if(dst.length==4){
+			            	match.setNetworkDestination(ByteBuffer.wrap(dst).getInt());
+			            }
+			            mod.setMatch(match);
+			            entry.setFlowMod(mod);
+			            retVal.add(entry);
+					}
+				}
+			}
+		}
+		else{
+			if(dstIsMAC){
+				//source is ip and dst is MAC
+				for(byte[] src:srcList){
+					for(byte[] dst:dstList){
+						FlowEntry entry = new FlowEntry();
+						entry.setActive(false);
+						if(src.length==5){
+							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
+							for(OFSwitch sw:switches){
+								entry.addSwitch(sw);
+							}
+			            }
+			            else if(src.length==4){
+			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            }
+						OFFlowMod mod = new OFFlowMod();
+						OFMatch match = new OFMatch();
+						mod.setCommand((byte) 0);
+						mod.setPriority((short) priority);
+						mod.setTableId((byte) 0);
+			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+			            
+			            if(request.getFlowAction()==FlowAction.ALLOW){
+			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+				            instruction.setTableId((byte) 1);
+				            instructions.add(instruction);
+			            }
+			            else if(request.getFlowAction()==FlowAction.DROP){
+			            	OFActionOutput action = new OFActionOutput();
+			                action.setMaxLength((short) 0);
+			                
+			            	List<OFAction> actions = new ArrayList<OFAction>();
+			                actions.add(action);
+			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+			                instructions.add(instruction);
+			            }
+			            mod.setInstructions(instructions);
+			            match.setDataLayerDestination(src);
+			            match.setDataLayerType((short) 0x0800);
+			            if(src.length==5){
+			            	int mask = -1 << (32 - src[4]);
+			            	match.setNetworkDestinationMask(ByteBuffer.wrap(src).getInt(), mask);
+			            }
+			            else if(src.length==4){
+			            	match.setNetworkSource(ByteBuffer.wrap(dst).getInt());
+			            }
+			            mod.setMatch(match);
+			            entry.setFlowMod(mod);
+			            retVal.add(entry);
+					}
+				}
+			}
+			else{
+				//src and dst are ip
+				for(byte[] src:srcList){
+					for(byte[] dst:dstList){
+						FlowEntry entry = new FlowEntry();
+						entry.setActive(false);
+						if(src.length==5){
+							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
+							for(OFSwitch sw:switches){
+								entry.addSwitch(sw);
+							}
+			            }
+			            else if(src.length==4){
+			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            }
+						
+						OFFlowMod mod = new OFFlowMod();
+						OFMatch match = new OFMatch();
+						mod.setCommand((byte) 0);
+						mod.setPriority((short) priority);
+						mod.setTableId((byte) 0);
+			            List<OFInstruction> instructions = new ArrayList<OFInstruction>();
+			            
+			            if(request.getFlowAction()==FlowAction.ALLOW){
+			            	OFInstructionGotoTable instruction = new OFInstructionGotoTable();
+				            instruction.setTableId((byte) 1);
+				            instructions.add(instruction);
+			            }
+			            else if(request.getFlowAction()==FlowAction.DROP){
+			            	OFActionOutput action = new OFActionOutput();
+			                action.setMaxLength((short) 0);
+			                
+			            	List<OFAction> actions = new ArrayList<OFAction>();
+			                actions.add(action);
+			                OFInstructionApplyActions instruction = new OFInstructionApplyActions(actions);
+			                instructions.add(instruction);
+			            }
+			            mod.setInstructions(instructions);
+			            match.setDataLayerType((short) 0x0800);
+			            if(src.length==5){	
+			            	int mask = -1 << (32 - src[4]);
+			            	match.setNetworkDestinationMask(ByteBuffer.wrap(src).getInt(), mask);
+			            }
+			            else if(src.length==4){
+			            	match.setNetworkSource(ByteBuffer.wrap(src).getInt());
+			            }
+			            if(dst.length==5){
+			            	int mask = -1 << (32 - dst[4]);
+			            	match.setNetworkDestinationMask(ByteBuffer.wrap(dst).getInt(), mask);
+			            }
+			            else if(dst.length==4){
+			            	match.setNetworkDestination(ByteBuffer.wrap(dst).getInt());
+			            }
+			            mod.setMatch(match);
+			            entry.setFlowMod(mod);
+			            retVal.add(entry);
+					}
+				}
+			}
+		}
 		
-		return null;
-	}
-	
-	
-	
-	
-	
-	
-	public boolean requestDelFlow(FlowRequest request, int id){
-		return false;
+		
+		return retVal;
 	}
 
 }

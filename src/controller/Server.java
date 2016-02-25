@@ -53,8 +53,8 @@ public class Server {
 		*/
 		
 		//TEST CODE HERE ****************************************************************************************
-		
-		Domain top = new Domain();
+		/*
+		Domain src = new Domain();
 		ArrayList<byte[]> networks = new ArrayList<byte[]>();
 		ByteBuffer n = ByteBuffer.allocate(4);
 		n.put((byte) 172);
@@ -62,11 +62,20 @@ public class Server {
 		n.put((byte) 1);
 		n.put((byte) 101);
 		networks.add(n.array());
-		top.setNetworks(networks);
+		src.setNetworks(networks);
 		
+		networks = new ArrayList<byte[]>();
+		n = ByteBuffer.allocate(4);
+		n.put((byte) 172);
+		n.put((byte) 16);
+		n.put((byte) 1);
+		n.put((byte) 2);
+		networks.add(n.array());
+		Domain dst = new Domain();
+		dst.setNetworks(networks);
 		TrafficClass tclass = new TrafficClass();
 		
-		FlowRequest fReq = new FlowRequest(top,tclass , 1, FlowAction.ALLOW);
+		FlowRequest fReq = new FlowRequest(src,dst,tclass , 1, FlowAction.ALLOW);
 		
 		Application app = null;
 		try {
@@ -76,7 +85,7 @@ public class Server {
 		}
 		
 		controller.getFlowSolver().requestAddFlow(fReq, app);
-		
+		*/
 		//END OF TEST CODE **************************************************************************************
 		
 	}

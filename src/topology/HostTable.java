@@ -1,7 +1,9 @@
 package topology;
 
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import controller.OFSwitch;
@@ -30,7 +32,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 	public OFSwitch getHost(byte[] macAddress){
 		for(SwitchMapping swMap:this){
 			for(HostMapping h: swMap.getHosts()){
-				if(h.getMac() == macAddress) return swMap.getSw();
+				if(new BigInteger(h.getMac()).intValue() == new BigInteger(macAddress).intValue()) return swMap.getSw();
 			}
 		}
 		return null;

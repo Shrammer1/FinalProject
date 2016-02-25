@@ -8,6 +8,7 @@ import java.util.Queue;
 import org.openflow.protocol.OFType;
 
 import api.AppAPI;
+import flowsolver.FlowRequest;
 
 public class Application extends UnicastRemoteObject implements AppAPI{
 	
@@ -212,9 +213,15 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 	}
 	
 	
+	@Override
+	public boolean requestAddFlow(FlowRequest request) throws RemoteException {
+		return controller.getFlowSolver().requestAddFlow(request, this);
+	}
 	
-	
-	
+	@Override
+	public boolean requestDelFlow(FlowRequest request) throws RemoteException {
+		return controller.getFlowSolver().requestDelFlow(request, this);
+	}
 	
 	
 	
@@ -225,5 +232,7 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 	private static int getNextID(){
 		return nextID++;
 	}
+
+	
 	
 }
