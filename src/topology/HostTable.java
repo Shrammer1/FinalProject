@@ -24,7 +24,9 @@ public class HostTable extends ArrayList<SwitchMapping>{
 	public OFSwitch getHost(int ipAddress){
 		for(SwitchMapping swMap:this){
 			for(HostMapping h: swMap.getHosts()){
-				if(h.getIp() == ipAddress) return swMap.getSw();
+				for(IPMapping ip:h.getIPs()){
+					if(ip.getIP() == ipAddress) return swMap.getSw();
+				}
 			}
 		}
 		return null;
@@ -41,11 +43,14 @@ public class HostTable extends ArrayList<SwitchMapping>{
 	public ArrayList<OFSwitch> getHosts(int ipAddress, int bits){
 		ArrayList<OFSwitch> retVal = new ArrayList<OFSwitch>();
 		for(SwitchMapping swMap:this){
+			loop1:
 			for(HostMapping h: swMap.getHosts()){
 				int mask = -1 << (32 - bits);
-				if ((ipAddress & mask) == (h.getIp() & mask)) {
-				    retVal.add(swMap.getSw());
-				    break; //we've found at LEAST 1 host in the subnet on the switch so we don't need to check the rest.
+				for(IPMapping ip:h.getIPs()){
+					if ((ipAddress & mask) == (ip.getIP() & mask)) {
+					    retVal.add(swMap.getSw());
+					    break loop1; //we've found at LEAST 1 host in the subnet on the switch so we don't need to check the rest.
+					}
 				}
 			}
 		}
@@ -64,8 +69,12 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		String retval = "";
 		for(SwitchMapping map:this){
 			for(HostMapping h:map.getHosts()){
+				String ips = "";
+				for(IPMapping ip: h.getIPs()){
+					ips = ips + intToIP(ip.getIP()) + " | ";
+				}
 				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + intToIP(h.getIp()) + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + ips + "\n";
 			}
 		}
 		return retval;
@@ -102,10 +111,11 @@ public class HostTable extends ArrayList<SwitchMapping>{
 	public synchronized boolean add(SwitchMapping map){
 		for(SwitchMapping m:this){
 			if(m.equals(map)){
-				m.updateHosts(map.getHosts());
-				return true;
+				//we found a mapping for this switch - port
+				return m.updateHosts(map.getHosts());
 			}
 		}
+		//we didnt find a mapping, add a new one
 		return super.add(map);
 	}
 
@@ -117,10 +127,20 @@ public class HostTable extends ArrayList<SwitchMapping>{
 				this.remove(map);
 			}
 		}
-		
-		
-		
-		
+	}
+	
+	public void ageMapping(int ip){
+		for(SwitchMapping swMap:this){
+			for(HostMapping hostMap:swMap.getHosts()){
+				for(IPMapping ipMap:hostMap.getIPs()){
+					if(ipMap.getIP() == ip){
+						//we've found the mapping for this IP
+						ipMap.startTimingOut();
+					}
+				}
+					
+			}
+		}
 	}
 	
 	

@@ -37,30 +37,37 @@ public class FlowSolver {
 		//Step 3: add the FlowEntry objects to the FlowEntryTable, updating the FlowRequest field where appropriate and only adding new FlowEntry objects when there are no duplicates (done via HashMap)
 		
 		
-		ArrayList<FlowEntry> flows = buildFlows(request, app.getPriority() + request.getPriority());
+		ArrayList<FlowEntry> flowsToAdd = buildFlows(request, app.getPriority() + request.getPriority());
+		if(flowsToAdd == null) return false;
 		
 		//TODO: add code that properly updates the FlowEntryTable and sends out new flows
 		
-		//This magical code takes a sledge hammer to the controller and forces out flow mods, its for testing only
-		if(flows == null) return false;
-		for(FlowEntry e:flows){
-			e.getSwitch().get(0).sendMsg(e.getFlowMod());
+		for(FlowEntry flowToAdd:flowsToAdd){
+			flows.add(flowToAdd);
 		}
 		
+		
+		
+		//This magical code takes a sledge hammer to the controller and forces out flow mods, its for testing only
+		/*
+		for(FlowEntry e:flowsToAdd){
+			e.getSwitch().get(0).sendMsg(e.getFlowMod());
+		}
+		*/
 		return true;
 	}
 	
+	//TODO: finish this method
 	public boolean requestDelFlow(FlowRequest request, Application app){
-		ArrayList<FlowEntry> flows = buildFlows(request, app.getPriority() + request.getPriority());
-		for(FlowEntry flow:flows){
-			flow.getFlowMod().setCommand((byte) 0x03);
+		ArrayList<FlowEntry> flowsToDelete = buildFlows(request, app.getPriority() + request.getPriority());
+		
+		if(flowsToDelete == null) return false;
+		
+		for(FlowEntry e:flowsToDelete){
+			this.flows.remove(e);
 		}
 		
-		for(FlowEntry e:flows){
-			e.getSwitch().get(0).sendMsg(e.getFlowMod());
-		}
-		
-		return false;
+		return true;
 	}
 	
 	
@@ -191,7 +198,7 @@ public class FlowSolver {
 			for(byte[] src:srcList){
 				FlowEntry entry = new FlowEntry();
 				entry.setActive(false);
-				entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+				entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
 				
 				OFFlowMod mod = new OFFlowMod();
 				OFMatch match = new OFMatch();
@@ -227,7 +234,7 @@ public class FlowSolver {
 					FlowEntry entry = new FlowEntry();
 					entry.setActive(false);
 					//src is a single IP
-					entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+					entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 					OFFlowMod mod = new OFFlowMod();
 					OFMatch match = new OFMatch();
 					mod.setCommand((byte) 0);
@@ -261,7 +268,7 @@ public class FlowSolver {
 					FlowEntry entry = new FlowEntry();
 					entry.setActive(false);
 					for(OFSwitch sw:switches){
-						entry.addSwitch(sw);
+						entry.addSwitchs(sw);
 					}
 					//src is a single IP
 					OFFlowMod mod = new OFFlowMod();
@@ -323,7 +330,7 @@ public class FlowSolver {
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
 						entry.setActive(false);
-						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+						entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
 						
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -362,7 +369,7 @@ public class FlowSolver {
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
 						entry.setActive(false);
-						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
+						entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
 						
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -412,11 +419,11 @@ public class FlowSolver {
 						if(src.length==5){
 							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
 							for(OFSwitch sw:switches){
-								entry.addSwitch(sw);
+								entry.addSwitchs(sw);
 							}
 			            }
 			            else if(src.length==4){
-			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            	entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 			            }
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -464,11 +471,11 @@ public class FlowSolver {
 						if(src.length==5){
 							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
 							for(OFSwitch sw:switches){
-								entry.addSwitch(sw);
+								entry.addSwitchs(sw);
 							}
 			            }
 			            else if(src.length==4){
-			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            	entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 			            }
 						
 						OFFlowMod mod = new OFFlowMod();

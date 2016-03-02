@@ -32,6 +32,9 @@ public class TopologyMapper implements Runnable{
 		while(!(t.isInterrupted())){
 			try {
 				Thread.sleep(1000);
+				
+				System.out.println(hosts.toString());
+				
 				hosts.cleanDead();
 				links.cleanDead();
 			} catch (InterruptedException e) {
@@ -89,14 +92,15 @@ public class TopologyMapper implements Runnable{
 		}
 	}
 	
-	public synchronized void learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
+	public synchronized boolean learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
 		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
 		}
 		if((links.getLink(inPort, sw)) == null){
-			hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,300));
+			return hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,300));
 		}
+		return false;
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OFSwitch sw, int inPort) {
@@ -159,5 +163,10 @@ public class TopologyMapper implements Runnable{
 			}
 		}
 		
+	}
+
+
+	public void ageIP(int ip) {
+		hosts.ageMapping(ip);
 	}
 }

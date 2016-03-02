@@ -127,6 +127,7 @@ public class PacketHandler implements Runnable{
         }
 
         //STEP_3_A: If the output port is known, create and push a FlowMod
+        //if (outPort != null && pktIn.getDataLayerType() == (short) 0x0800) {
         if (outPort != null) {
             //Retrieves an OFMessage instance corresponding to the specified OFType
         	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
@@ -134,13 +135,18 @@ public class PacketHandler implements Runnable{
             fm.setCommand(OFFlowMod.OFPFC_ADD);
             fm.setCookie(0);
             fm.setFlags((short) 0);
-            fm.setHardTimeout((short) 0);
             fm.setIdleTimeout((short) 5);
-            
-           
+            fm.setFlags((short) 0x0001);
             
             match.setInPort(pi.getInPort());
             match.setDataLayerDestination(pktIn.getDataLayerDestination());
+            if(pktIn.getDataLayerType() == (short) 0x0800){
+            	match.setDataLayerType((short) 0x0800);
+                match.setNetworkSource(pktIn.getNetworkSource());
+            }
+            else{
+            	match.setDataLayerType(pktIn.getDataLayerType());
+            }
             match.setDataLayerSource(pktIn.getDataLayerSource());
             fm.setMatch(match);
             fm.setTableId((byte) 1);
@@ -167,7 +173,8 @@ public class PacketHandler implements Runnable{
         }
 
         //Sending packet out
-        if (outPort == null || pi.getBufferId() == 0xffffffff) {
+        //if (outPort == null || pi.getBufferId() == 0xffffffff || pktIn.getDataLayerType() != (short) 0x0800){
+        if (outPort == null || pi.getBufferId() == 0xffffffff){
             OFPacketOut po = new OFPacketOut();
             po.setBufferId(bufferId);
             po.setInPort(pi.getInPort());

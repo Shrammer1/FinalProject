@@ -33,13 +33,11 @@ public class FlowSolverTester {
 		src.setNetworks(networks);
 		*/
 		ArrayList<byte[]> macs = new ArrayList<byte[]>();
-		n = ByteBuffer.allocate(6);
-		n.put((byte) 0x00);
-		n.put((byte) 0x11);
-		n.put((byte) 0xd8);
-		n.put((byte) 0xf5);
-		n.put((byte) 0x9f);
-		n.put((byte) 0xca);
+		n = ByteBuffer.allocate(4);
+		n.put((byte) 209);
+		n.put((byte) 85);
+		n.put((byte) 146);
+		n.put((byte) 101);
 		macs.add(n.array());
 		src.setMacList(macs);
 		
@@ -58,9 +56,9 @@ public class FlowSolverTester {
 		
 		FlowRequest fReq = new FlowRequest(src,dst,tclass , 3, FlowAction.DROP);
 		
-		appIntf.requestAddFlow(fReq);
+		//appIntf.requestAddFlow(fReq);
 		
-		//appIntf.requestDelFlow(fReq);
+		appIntf.requestDelFlow(fReq);
 		
 		
 	}

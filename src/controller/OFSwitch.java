@@ -19,6 +19,7 @@ import org.openflow.protocol.OFError;
 import org.openflow.protocol.OFError.OFErrorType;
 import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFFlowRemoved;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
@@ -461,9 +462,21 @@ public class OFSwitch implements Runnable{
 	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
 	    					}
 	    					else{
-	    						topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
+	    						//learn a host
+	    						boolean newHost = topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
+	    						if(newHost){
+	    							int i =1;
+	    						}
 	    					}
 	    					
+	    				}
+	    				else if(msg.getType() == OFType.FLOW_REMOVED){
+	    					OFFlowRemoved flowRem = (OFFlowRemoved) msg;
+	    					if(flowRem.getCookie() == 0){
+	    						//Its one of our l2 learning flows that got removed
+	    						OFMatch match = flowRem.getMatch();
+	    						topo.ageIP(match.getNetworkSource());
+	    					}
 	    				}
 	    				else if(msg.getType() == OFType.STATS_REPLY){
 	    					if(((OFStatisticsReply) msg).getStatisticsType() == OFStatisticsType.PORT_DESC){
@@ -481,7 +494,7 @@ public class OFSwitch implements Runnable{
 							//System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
 	    				}
 	    				
-	    				if(flag == false){
+	    				if(flag == false){ //flag is used to skip l2_learning when the packetin is an LLDP message
 		    				//Evaluate if Layer 2 functionality is enabled and act upon it
 		    				if(controller.getL2Learning()){
 		    					//Add the message to the packet handler and activate a Thread for processing

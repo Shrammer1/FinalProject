@@ -38,14 +38,23 @@ public class FlowEntry{
 	public void setActive(boolean active) {
 		this.active = active;
 	}
-	public ArrayList<OFSwitch> getSwitch() {
+	public ArrayList<OFSwitch> getSwitchs() {
 		return ofswitch;
 	}
-	public void setSwitch(ArrayList<OFSwitch> switch1) {
+	public void setSwitchs(ArrayList<OFSwitch> switch1) {
 		ofswitch = switch1;
 	}
-	public void addSwitch(OFSwitch switch1) {
+	public void addSwitchs(OFSwitch switch1) {
 		ofswitch.add(switch1);
+	}
+	public void updateSwitchs(ArrayList<OFSwitch> switch1) {
+		for(OFSwitch sw_toAdd:switch1){
+			for(OFSwitch sw_toCheck: ofswitch){
+				if(!(sw_toAdd.equals(sw_toCheck))){
+					ofswitch.add(sw_toAdd);
+				}
+			}
+		}
 	}
 	public ArrayList<FlowRequest> getFlowRequest() {
 		return fRequest;
@@ -57,10 +66,15 @@ public class FlowEntry{
 	public boolean addFlowRequest(FlowRequest req){
 		return fRequest.add(req);
 	}
-	public boolean delFlowRequest(FlowRequest req){
+	public boolean addFlowRequest(ArrayList<FlowRequest> req){
+		return fRequest.addAll(req);
+	}
+	public boolean removeFlowRequest(FlowRequest req){
 		return fRequest.remove(req);
 	}
-
+	public boolean removeFlowRequest(ArrayList<FlowRequest> req){
+		return fRequest.removeAll(req);
+	}
 	@Override
 	public int hashCode() {
 		final int prime = 31;

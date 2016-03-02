@@ -64,17 +64,14 @@ public class SwitchMapping{
 	    return sb.toString();
 	}
 	
-	public void updateHosts(ArrayList<HostMapping> hosts){
+	public boolean updateHosts(ArrayList<HostMapping> hosts){
 		boolean flag = false;
+		boolean retVal = false;
 		ArrayList<HostMapping> hostsToAdd = new ArrayList<>();
 		for(HostMapping h1: hosts){
 			flag = false;
 			for(HostMapping h2: this.hosts){
 				if(h2.equals(h1)){
-					if(h1.getIp() == 0 || h2.getIp() ==0){
-						int i =1;
-					}
-					
 					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 					h2.update(h1);
 					flag = true;
@@ -82,15 +79,25 @@ public class SwitchMapping{
 			}
 			if(!(flag)){ //we didnt find any hosts to update so add the host as a new one.
 				hostsToAdd.add(h1);
+				retVal = true;
 			}
 		}
 		this.hosts.addAll(hostsToAdd);
+		return retVal;
 	}
 	
 	
 	public void addHost(byte[] mac, int ip, long ttl){
 		created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-		hosts.add(new HostMapping(mac, ip,ttl));
+		HostMapping hostToAdd = new HostMapping(mac, ip,ttl);		
+		for(HostMapping h:hosts){
+			if(h.equals(hostToAdd)){
+				h.update(hostToAdd); //theres already a host with this MAC, update it
+				return;
+			}
+		}
+		//No hosts found, add a new one
+		this.hosts.add(hostToAdd);
 	}
 	
 	public void delHost(byte[] mac, int ip){
