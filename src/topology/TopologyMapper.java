@@ -93,12 +93,12 @@ public class TopologyMapper implements Runnable{
 	}
 	
 	public synchronized boolean learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
-		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 300);
+		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 60);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
 		}
 		if((links.getLink(inPort, sw)) == null){
-			return hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,300));
+			return hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,60));
 		}
 		return false;
 	}
@@ -164,9 +164,12 @@ public class TopologyMapper implements Runnable{
 		}
 		
 	}
-
-
+	
+	public void registerMapping(MacMapping map){
+		hosts.updateMappings(map);
+	}
+	
 	public void ageIP(int ip) {
-		hosts.ageMapping(ip);
+		hosts.ageIPMapping(ip);
 	}
 }

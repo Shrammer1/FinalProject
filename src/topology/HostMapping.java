@@ -8,16 +8,16 @@ import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 public class HostMapping {
-	private byte[] mac;
+	private MacMapping mac;
 	private ArrayList<IPMapping> ips = new ArrayList<IPMapping>();
 	
 	
 	public byte[] getMac() {
-		return mac;
+		return mac.getMacAddress();
 	}
 
 	public void setMac(byte[] mac) {
-		this.mac = mac;
+		this.mac.setMacAddress(mac);
 	}
 
 	public ArrayList<IPMapping> getIPs() {
@@ -28,9 +28,6 @@ public class HostMapping {
 		this.ips = ips;
 	}
 
-	private long ttl;
-	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-	
 	public boolean isValid(){
 		Iterator<IPMapping> i = this.ips.iterator();
 		while(i.hasNext()){
@@ -40,10 +37,7 @@ public class HostMapping {
 				//System.out.println("Deleting old ip: " + intToIP(ip.getIP()));
 			}
 		}
-		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > ttl){
-			return false;
-		}
-		return true;
+		return mac.isValid();
 	}
 	
 	private String intToIP(int ip){
@@ -62,7 +56,7 @@ public class HostMapping {
 		}
 	
 	public void update(HostMapping map){
-		
+		this.mac.setMacAddress(map.getMac());
 		for(IPMapping ipToAdd:map.ips){
 			if(ipToAdd.getIP() != 0){
 				if(!(this.ips.contains(ipToAdd))){
@@ -78,22 +72,20 @@ public class HostMapping {
 				}
 			}
 		}
-		created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	}
 	
 	public HostMapping(byte[] mac, int ip,long ttl){
-		this.mac = mac;
+		this.mac = new MacMapping(mac,ttl);
 		if(ip != 0){
 			this.ips.add(new IPMapping(ip));
 		}
-		this.ttl = ttl;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + Arrays.hashCode(mac);
+		result = prime * result + ((mac == null) ? 0 : mac.hashCode());
 		return result;
 	}
 
@@ -106,14 +98,19 @@ public class HostMapping {
 		if (getClass() != obj.getClass())
 			return false;
 		HostMapping other = (HostMapping) obj;
-		if (Arrays.equals(mac, other.mac)){
-			return true;
-		}
-		else{
+		if (mac == null) {
+			if (other.mac != null)
+				return false;
+		} else if (!mac.equals(other.mac))
 			return false;
-		}
-		
+		return true;
 	}
+
+	public MacMapping getMacMapping() {
+		return this.mac;
+	}
+
+	
 	
 	
 	

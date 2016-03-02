@@ -373,7 +373,7 @@ public class OFSwitch implements Runnable{
 		if(controller.getL2Learning()){
 			
 			//Creating/Instantiating a new PacketHandler Object
-			pkhl = new PacketHandler(threadName + "_PacketHandler",sthl);
+			pkhl = new PacketHandler(threadName + "_PacketHandler",this);
 			
 			//Starting a PacketHandler Thread
 			pkhl.start();
@@ -554,6 +554,10 @@ public class OFSwitch implements Runnable{
 		} catch (IOException e) {
 
 		}
+	}
+	
+	public Controller getController(){
+		return this.controller;
 	}
 	
 	

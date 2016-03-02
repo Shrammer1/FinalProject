@@ -67,6 +67,7 @@ public class SwitchMapping{
 	public boolean updateHosts(ArrayList<HostMapping> hosts){
 		boolean flag = false;
 		boolean retVal = false;
+		ArrayList<HostMapping> mappingsChanged = new ArrayList<HostMapping>();
 		ArrayList<HostMapping> hostsToAdd = new ArrayList<>();
 		for(HostMapping h1: hosts){
 			flag = false;
@@ -74,6 +75,7 @@ public class SwitchMapping{
 				if(h2.equals(h1)){
 					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 					h2.update(h1);
+					mappingsChanged.add(h2);
 					flag = true;
 				}
 			}
@@ -82,6 +84,7 @@ public class SwitchMapping{
 				retVal = true;
 			}
 		}
+		
 		this.hosts.addAll(hostsToAdd);
 		return retVal;
 	}

@@ -129,7 +129,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		}
 	}
 	
-	public void ageMapping(int ip){
+	public void ageIPMapping(int ip){
 		for(SwitchMapping swMap:this){
 			for(HostMapping hostMap:swMap.getHosts()){
 				for(IPMapping ipMap:hostMap.getIPs()){
@@ -139,6 +139,14 @@ public class HostTable extends ArrayList<SwitchMapping>{
 					}
 				}
 					
+			}
+		}
+	}
+
+	public void updateMappings(MacMapping map) {
+		for(SwitchMapping swMap:this){
+			for(HostMapping hostMap:swMap.getHosts()){
+				hostMap.getMacMapping().addMatchs(map.getMatches());					
 			}
 		}
 	}

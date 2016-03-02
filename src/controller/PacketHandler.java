@@ -22,6 +22,8 @@ import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.util.U16;
 
+import topology.MacMapping;
+
 /**
  * 
  * @author Nicholas Landriault
@@ -60,16 +62,16 @@ public class PacketHandler implements Runnable{
 	
 	private BasicFactory factory = BasicFactory.getInstance();
 	private List<OFMessage> l = new ArrayList<OFMessage>();
-	private StreamHandler sthl;
+	private OFSwitch sw;
 	
 	/**************************************************
 	 * CONSTRUCTORS
 	 **************************************************/
-	public PacketHandler(String name, StreamHandler sthl)
+	public PacketHandler(String name, OFSwitch sw)
 	{
 		threadName = name;
 		this.macTable=new LinkedHashMap<Integer, Integer>(64001, 64000);
-		this.sthl = sthl;
+		this.sw = sw;
 	}
 	
 	/**************************************************
@@ -164,12 +166,10 @@ public class PacketHandler implements Runnable{
             instructions.add(instruction);
             
             fm.setInstructions(instructions);
-
-            try {
-				sthl.sendMsg(fm);
-			} catch (IOException e) {
-				LOGGER.log(Level.SEVERE, e.toString());
-			}
+            
+            sw.getController().getTopologyMapper().registerMapping(new MacMapping(match.getDataLayerSource(),0,match));
+            
+            sw.sendMsg(fm);
         }
 
         //Sending packet out
@@ -198,11 +198,7 @@ public class PacketHandler implements Runnable{
             } else {
                 po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH+ po.getActionsLength()));
             }
-            try {
-				sthl.sendMsg(po);
-			} catch (IOException e) {
-				LOGGER.log(Level.SEVERE, e.toString());
-			}
+            sw.sendMsg(po);
         }
 	}
 	
@@ -249,11 +245,7 @@ public class PacketHandler implements Runnable{
         
         fm.setInstructions(instructions);
         fm.setLength(U16.t(OFFlowMod.MINIMUM_LENGTH+OFActionOutput.MINIMUM_LENGTH));
-        try {
-			sthl.sendMsg(fm);
-		} catch (IOException e) {
-			LOGGER.log(Level.SEVERE, e.toString());
-		}
+        sw.sendMsg(fm);
 	}
 	
 
