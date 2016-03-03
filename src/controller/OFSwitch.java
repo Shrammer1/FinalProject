@@ -41,6 +41,8 @@ import org.openflow.protocol.instruction.OFInstructionGotoTable;
 import org.openflow.protocol.statistics.OFPortDescription;
 import org.openflow.protocol.statistics.OFStatistics;
 import org.openflow.protocol.statistics.OFStatisticsType;
+
+import flowsolver.FlowSolver;
 import topology.LLDPMessage;
 import topology.TopologyMapper;
 
@@ -78,6 +80,7 @@ public class OFSwitch implements Runnable{
 	private ArrayList<OFPhysicalPort> ports = new ArrayList<OFPhysicalPort>();
 	private Controller controller;
 	private TopologyMapper topo;
+	private FlowSolver flowSolver;
 	
 	/**************************************************
 	 * PUBLIC VARIABLES
@@ -93,6 +96,7 @@ public class OFSwitch implements Runnable{
 		this.sock = sock;
 		this.controller = swhl.getController();
 		this.topo = controller.getTopologyMapper();
+		this.flowSolver = controller.getFlowSolver();
 		threadName = name;
 		stream = strm;
 		this.switchID = switchID;
@@ -464,8 +468,8 @@ public class OFSwitch implements Runnable{
 	    					else{
 	    						//learn a host
 	    						boolean newHost = topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
-	    						if(newHost){
-	    							int i =1;
+	    						if(newHost){	//a new host has been discovered!!!!
+	    							//this.flowSolver.
 	    						}
 	    					}
 	    					

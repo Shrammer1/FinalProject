@@ -12,14 +12,13 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 	private static final long serialVersionUID = -6202524173607913862L;
 	
 	public FlowEntry put(FlowEntry flowentry){
-		System.out.println(flowentry.hashCode());
-		return super.put(flowentry.hashCode(),flowentry);
+		//System.out.println(flowentry.hashCode());
+		return this.put(flowentry.hashCode(),flowentry);
 	}
 	
 	public FlowEntry remove(FlowEntry flowToRemove){
-		//TODO: add code to remove flowmod
-		System.out.println(flowToRemove.hashCode());
-		FlowEntry entry = super.get(flowToRemove.hashCode());
+		FlowEntry entry = this.get(flowToRemove.hashCode());
+		//System.out.println(entry.hashCode());
 		if(entry == null){
 			return null;
 		}
@@ -27,18 +26,15 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 			entry.removeFlowRequest(flowToRemove.getFlowRequest());
 			if(entry.getFlowRequest().size()==0){
 				for(OFSwitch sw:entry.getSwitchs()){
-					OFFlowMod mod = entry.getFlowMod();
+					OFFlowMod mod = entry.getFlowMod().clone();
 					mod.setCommand((byte) 0x03);
-					sw.sendMsg(mod);
-					super.remove(entry.hashCode());
-					return entry;
+					if(sw != null)sw.sendMsg(mod);
 				}
+				//System.out.println(entry.hashCode());
+				return this.remove(entry.hashCode());
 			}
+			return entry;
 		}
-		
-		
-		
-		return super.remove(flowToRemove.hashCode());
 	}
 	
 	public boolean contains(FlowEntry flowentry){
@@ -47,7 +43,7 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 
 	public FlowEntry add(FlowEntry flowToAdd) {
 		FlowEntry entry = null;
-		entry = super.get(flowToAdd.hashCode());
+		entry = this.get(flowToAdd.hashCode());
 		if(entry == null){
 			//no mapping, add a new one then send flow
 			for(OFSwitch sw:flowToAdd.getSwitchs()){

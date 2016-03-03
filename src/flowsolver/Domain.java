@@ -2,6 +2,7 @@ package flowsolver;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 
 public class Domain implements Serializable {
@@ -98,13 +99,27 @@ public class Domain implements Serializable {
 		if (macList == null) {
 			if (other.macList != null)
 				return false;
-		} else if (!macList.equals(other.macList))
-			return false;
+		} else{
+			for(byte[] arr1: macList){
+				for(byte[] arr2:other.macList){
+					if(!(Arrays.equals(arr1, arr2))){
+						return false;
+					}
+				}
+			}
+		}
 		if (networks == null) {
 			if (other.networks != null)
 				return false;
-		} else if (!networks.equals(other.networks))
-			return false;
+		} else {
+			for(byte[] arr1: networks){
+				for(byte[] arr2:other.networks){
+					if(!(Arrays.equals(arr1, arr2))){
+						return false;
+					}
+				}
+			}
+		}
 		if (subDomains == null) {
 			if (other.subDomains != null)
 				return false;
