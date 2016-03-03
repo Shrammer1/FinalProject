@@ -51,7 +51,7 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 		if(entry == null){
 			//no mapping, add a new one then send flow
 			for(OFSwitch sw:flowToAdd.getSwitchs()){
-				sw.sendMsg(flowToAdd.getFlowMod());
+				if(sw != null)sw.sendMsg(flowToAdd.getFlowMod());
 			}
 			return put(flowToAdd);
 		}

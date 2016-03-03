@@ -73,6 +73,45 @@ public class Domain implements Serializable {
 		}
 		return retVal;
 	}
+
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((macList == null) ? 0 : macList.hashCode());
+		result = prime * result + ((networks == null) ? 0 : networks.hashCode());
+		result = prime * result + ((subDomains == null) ? 0 : subDomains.hashCode());
+		return result;
+	}
+
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Domain other = (Domain) obj;
+		if (macList == null) {
+			if (other.macList != null)
+				return false;
+		} else if (!macList.equals(other.macList))
+			return false;
+		if (networks == null) {
+			if (other.networks != null)
+				return false;
+		} else if (!networks.equals(other.networks))
+			return false;
+		if (subDomains == null) {
+			if (other.subDomains != null)
+				return false;
+		} else if (!subDomains.equals(other.subDomains))
+			return false;
+		return true;
+	}
 	
 	
 	

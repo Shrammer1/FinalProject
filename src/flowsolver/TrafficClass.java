@@ -57,4 +57,35 @@ public class TrafficClass implements Serializable{
 	public void setPortType(byte portType) {
 		this.portType = portType;
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + dstPort;
+		result = prime * result + portType;
+		result = prime * result + srcPort;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TrafficClass other = (TrafficClass) obj;
+		if (dstPort != other.dstPort)
+			return false;
+		if (portType != other.portType)
+			return false;
+		if (srcPort != other.srcPort)
+			return false;
+		return true;
+	}
+	
+	
+	
 }
