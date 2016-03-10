@@ -12,6 +12,7 @@ public class MacMapping {
 	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	private boolean timingOut = false;
 	private long ttl;
+	private HostMapping host;
 	
 	public boolean addMatch(OFMatch match){
 		return matches.add(match);
@@ -33,6 +34,18 @@ public class MacMapping {
 		this.ttl = ttl;
 	}
 	
+	public MacMapping(byte[] mac, long ttl, OFMatch match, HostMapping host){
+		this.setMacAddress(mac);
+		this.setHost(host);
+		this.matches.add(match);
+		this.ttl = ttl;
+	}
+	
+	public MacMapping(byte[] mac, long ttl, HostMapping host){
+		this.setMacAddress(mac);
+		this.setHost(host);
+		this.ttl = ttl;
+	}
 	
 	private void startTimingOut(){
 		timingOut = true;
@@ -85,6 +98,18 @@ public class MacMapping {
 	}
 	public void addMatchs(ArrayList<OFMatch> matches2) {
 		matches.addAll(matches2);
+	}
+	public HostMapping getHost() {
+		return host;
+	}
+	public void setHost(HostMapping host) {
+		this.host = host;
+	}
+	public void updateSwitches() {
+		HostMapping hostToCheck = new HostMapping();
+		hostToCheck.setMac(macAddr);
+		host.getSwitchMap().getHostTable().getTopology().getController().getFlowSolver().removeIfAble(host.getSwitchMap().getHostTable().getTopology().getController().getFlowSolver().getRelevantFlows(hostToCheck));
+		
 	}
 
 	

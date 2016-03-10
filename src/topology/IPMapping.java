@@ -1,14 +1,23 @@
 package topology;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 public class IPMapping {
 	private int ipaddr;
 	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	private boolean timingOut = false;
+	private HostMapping host;
 	
 	public IPMapping(int ip){
 		this.setIP(ip);
+	}
+	
+	public IPMapping(int ip, HostMapping host){
+		this.setIP(ip);
+		this.setHost(host);
 	}
 	
 	public int getIP() {
@@ -17,6 +26,22 @@ public class IPMapping {
 
 	public void setIP(int ipaddr) {
 		this.ipaddr = ipaddr;
+	}
+	
+	@SuppressWarnings("unused")
+	private String intToIP(int ip){
+	  byte[] addr = new byte[] {
+	    (byte)((ip >>> 24) & 0xff),
+	    (byte)((ip >>> 16) & 0xff),
+	    (byte)((ip >>>  8) & 0xff),
+	    (byte)((ip       ) & 0xff)};
+
+	  try {
+		return InetAddress.getByAddress(addr).getHostAddress();
+	  } catch (UnknownHostException e) {
+		e.printStackTrace();
+	  }
+	  return null;
 	}
 	
 	public void startTimingOut(){
@@ -31,6 +56,7 @@ public class IPMapping {
 	public boolean isValid(){
 		if(timingOut==false) return true;
 		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > 30){
+			
 			return false;
 		}
 		return true;
@@ -56,6 +82,22 @@ public class IPMapping {
 		if (ipaddr != other.ipaddr)
 			return false;
 		return true;
+	}
+
+	public HostMapping getHost() {
+		return host;
+	}
+
+	public void setHost(HostMapping host) {
+		this.host = host;
+	}
+
+	public void updateSwitches() {
+		HostMapping hostToCheck = new HostMapping();
+		ArrayList<IPMapping> ips = new ArrayList<IPMapping>();
+		ips.add(this);
+		hostToCheck.setIPs(ips);
+		host.getSwitchMap().getHostTable().getTopology().getController().getFlowSolver().removeIfAble(host.getSwitchMap().getHostTable().getTopology().getController().getFlowSolver().getRelevantFlows(hostToCheck));
 	}
 	
 	

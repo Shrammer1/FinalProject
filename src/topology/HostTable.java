@@ -3,14 +3,18 @@ package topology;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.rmi.RemoteException;
 import java.util.ArrayList;
+
 import controller.OFSwitch;
 
 public class HostTable extends ArrayList<SwitchMapping>{
 
 	private static final long serialVersionUID = 853289804357492274L;
+	private TopologyMapper topo;
+	
+	public HostTable(TopologyMapper topo){
+		this.setTopology(topo);
+	}
 	
 	public SwitchMapping getMapping(int inPort, OFSwitch sw){
 		SwitchMapping testMap = new SwitchMapping(inPort, sw);
@@ -20,6 +24,15 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		
 		return null;
 	}
+	
+	public ArrayList<HostMapping> getMappings(OFSwitch sw){
+		ArrayList<HostMapping> retVal = new ArrayList<HostMapping>();
+		for(SwitchMapping map:this){
+			if(map.getSw().equals(sw)) retVal.addAll(map.getHosts());
+		}
+		return retVal;
+	}
+	
 	
 	public OFSwitch getHost(int ipAddress){
 		for(SwitchMapping swMap:this){
@@ -116,6 +129,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 			}
 		}
 		//we didnt find a mapping, add a new one
+		map.setHostTable(this);
 		return super.add(map);
 	}
 
@@ -129,16 +143,17 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		}
 	}
 	
-	public void ageIPMapping(int ip){
+	public void ageIPMapping(int ip, OFSwitch ofSwitch){
 		for(SwitchMapping swMap:this){
-			for(HostMapping hostMap:swMap.getHosts()){
-				for(IPMapping ipMap:hostMap.getIPs()){
-					if(ipMap.getIP() == ip){
-						//we've found the mapping for this IP
-						ipMap.startTimingOut();
-					}
+			if(swMap.getSw().equals(ofSwitch)){
+				for(HostMapping hostMap:swMap.getHosts()){
+					for(IPMapping ipMap:hostMap.getIPs()){
+						if(ipMap.getIP() == ip){
+							//we've found the mapping for this IP
+							ipMap.startTimingOut();
+						}
+					}		
 				}
-					
 			}
 		}
 	}
@@ -150,6 +165,13 @@ public class HostTable extends ArrayList<SwitchMapping>{
 			}
 		}
 	}
-	
+
+	public TopologyMapper getTopology() {
+		return topo;
+	}
+
+	public void setTopology(TopologyMapper topo) {
+		this.topo = topo;
+	}
 	
 }

@@ -2,8 +2,6 @@ package controller;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
-import java.rmi.RemoteException;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -14,9 +12,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.openflow.io.OFMessageAsyncStream;
-import org.openflow.protocol.OFError;
-import org.openflow.protocol.OFError.OFErrorType;
 import org.openflow.protocol.OFFeaturesReply;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFFlowRemoved;
@@ -25,12 +22,12 @@ import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPhysicalPort;
+import org.openflow.protocol.OFPhysicalPort.OFPortState;
 import org.openflow.protocol.OFPort;
-import org.openflow.protocol.OFPortMod;
 import org.openflow.protocol.OFPortStatus;
+import org.openflow.protocol.OFSetConfig;
 import org.openflow.protocol.OFStatisticsReply;
 import org.openflow.protocol.OFStatisticsRequest;
-import org.openflow.protocol.OFPhysicalPort.OFPortState;
 import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
@@ -43,6 +40,7 @@ import org.openflow.protocol.statistics.OFStatistics;
 import org.openflow.protocol.statistics.OFStatisticsType;
 
 import flowsolver.FlowSolver;
+import topology.HostMapping;
 import topology.LLDPMessage;
 import topology.TopologyMapper;
 
@@ -169,8 +167,7 @@ public class OFSwitch implements Runnable{
 		try {
 			sthl.sendMsg(msg);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			LOGGER.log(Level.SEVERE, e.toString());
 		}
 	}
 	
@@ -315,7 +312,7 @@ public class OFSwitch implements Runnable{
 		boolean flag = false;
 		
 		//Creating/Instantiating a new StreamHandler Object
-		sthl = new StreamHandler(threadName + "_StreamHandler", stream);
+		sthl = new StreamHandler(threadName + "_StreamHandler", stream, this);
 		sthl.start();
 		
 		//As of OpenFlow 1.3 a default flow must be sent to the switches to direct non-matching traffic to the controller:
@@ -368,6 +365,16 @@ public class OFSwitch implements Runnable{
 		}
         
         
+        OFSetConfig setCfg= new OFSetConfig();
+        setCfg.setFlags((short)0x2);
+        setCfg.setMissSendLength((short) 0xffff );
+        try {
+			sthl.sendMsg(setCfg);
+		} catch (IOException e2) {
+			LOGGER.log(Level.SEVERE, e2.toString());
+		}
+        
+        
 		
 		
 		/*
@@ -384,145 +391,166 @@ public class OFSwitch implements Runnable{
 		}
 		//Starting a StreamHandler Thread
 		sthl.start();
-        try {
-        	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+        //try {
+    	lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+    	
+    	//Sending/Buffering the list of OFMessages for processing
+    	try {
+			sthl.sendMsg(l);
+		} catch (IOException e1) {
+			LOGGER.log(Level.SEVERE, e1.toString());
+		}
+    	
+    	//Clearing the list of OFMessages
+    	l.clear();
+    	
+    	boolean waitForReply = false;
+    	
+    	//Processing of messages available in stream
+    	OFMessage msg = null;
+    	msgIn = new ArrayList<>();
+        while(t!=null){
+        	if(t.isInterrupted()) break;
+        	try{
+        		msgIn.addAll(sthl.read());
+        		Thread.sleep(0, 1); //(ms,ns); ownership not lost
+        	}
+        	//Action taken upon NULL stream
+        	catch(NullPointerException e){
+        		stop();
+        		return; //Return to previous try/catch section after abort
+        	} catch (InterruptedException e) {
+        		stop();
+        		return;
+			} catch (IOException e) {
+				stop();
+        		return;
+			}
         	
-        	//Sending/Buffering the list of OFMessages for processing
-        	sthl.sendMsg(l);
+        	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
+        			- lastHeard > 4 && waitForReply==false)
+        	{
+        		//Create an OFMessage of type ECHO_REQUEST and send it for processing
+        		l.add(factory.getMessage(OFType.ECHO_REQUEST));
+        		try {
+					sthl.sendMsg(l);
+				} catch (IOException e) {
+					LOGGER.log(Level.SEVERE, e.toString());
+				}
+        		//Clear the list of OFMessages after previous operation
+			    l.clear();
+			    //Update boolean flag for replies to inform of the change
+			    waitForReply = true;
+        	}
         	
-        	//Clearing the list of OFMessages
-        	l.clear();
+        	//Processing of time out. Forcing to abort and start from scratch
+        	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
+        			- lastHeard > 10)
+        	{
+        		LOGGER.log(Level.INFO, "Switch: " + switchID + " has timmed out.");
+        		stop();
+        		return;
+        	}
         	
-        	boolean waitForReply = false;
-        	
-        	//Processing of messages available in stream
-        	OFMessage msg = null;
-            while(t.isInterrupted()==false){
-            	
-            	try{
-            		msgIn.addAll(stream.read());
-            		Thread.sleep(0, 1); //(ms,ns); ownership not lost
-            	}
-            	//Action taken upon NULL stream
-            	catch(NullPointerException e){
-            		stop();
-            		return; //Return to previous try/catch section after abort
-            	}
-            	
-            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
-            			- lastHeard > 4 && waitForReply==false)
-            	{
-            		//Create an OFMessage of type ECHO_REQUEST and send it for processing
-            		l.add(factory.getMessage(OFType.ECHO_REQUEST));
-            		sthl.sendMsg(l);
-            		//Clear the list of OFMessages after previous operation
+        	//Process messages if they exist
+	        if(!(msgIn.size()==0)){
+    			msg = msgIn.remove(0);
+    			//Case of an ECHO_REQUEST
+    			if(msg.getType() == OFType.ECHO_REQUEST){
+    				
+    				//Update the timer/time stamp
+    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+    				
+    				//Create and send and ECHO_REPLY message for processing
+		    		l.add(factory.getMessage(OFType.ECHO_REPLY));
+		    		try {
+						sthl.sendMsg(l);
+					} catch (IOException e) {
+						LOGGER.log(Level.SEVERE, e.toString());
+					}
+		    		//Clear the list of OFMessages after previous operation
 				    l.clear();
 				    //Update boolean flag for replies to inform of the change
-				    waitForReply = true;
-            	}
-            	
-            	//Processing of time out. Forcing to abort and start from scratch
-            	if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) 
-            			- lastHeard > 10)
-            	{
-            		stop();
-            		return;
-            	}
-            	
-            	//Process messages if they exist
-    	        if(!(msgIn.size()==0)){
-	    			msg = msgIn.remove(0);
-	    			//Case of an ECHO_REQUEST
-	    			if(msg.getType() == OFType.ECHO_REQUEST){
-	    				
-	    				//Update the timer/time stamp
-	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-	    				
-	    				//Create and send and ECHO_REPLY message for processing
-    		    		l.add(factory.getMessage(OFType.ECHO_REPLY));
-    		    		sthl.sendMsg(l);
-    		    		//Clear the list of OFMessages after previous operation
-    				    l.clear();
-    				    //Update boolean flag for replies to inform of the change
-    				    waitForReply = false;
-    		    	}
-	    			//Case of an ECHO_REPLY
-	    			else if(msg.getType() == OFType.ECHO_REPLY){
-	    				
-	    				//Update the timer/time stamp
-	    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-	    				//Update boolean flag for replies to inform of the change
-	    				waitForReply = false;
-    		    	}
-	    			//Any other case
-	    			else {
-	    				
-	    				if(msg.getType() == OFType.PACKET_IN){
-	    					
-	    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
-	    					
-	    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
-	    						flag = true;
-	    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
-	    					}
-	    					else{
-	    						//learn a host
-	    						boolean newHost = topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
-	    						if(newHost){	//a new host has been discovered!!!!
-	    							//this.flowSolver.
-	    						}
-	    					}
-	    					
+				    waitForReply = false;
+		    	}
+    			//Case of an ECHO_REPLY
+    			else if(msg.getType() == OFType.ECHO_REPLY){
+    				
+    				//Update the timer/time stamp
+    				lastHeard = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+    				//Update boolean flag for replies to inform of the change
+    				waitForReply = false;
+		    	}
+    			//Any other case
+    			else {
+    				if(msg.getType() == OFType.PACKET_IN){
+    					
+    					//really long way to ask if the nested packet inside the packet in is an LLDP messages
+    					
+    					if(((new OFMatch()).loadFromPacket(((OFPacketIn) msg).getPacketData(), ((OFPacketIn) msg).getInPort())).getDataLayerType() == (short)0x88CC){
+    						flag = true;
+    						topo.learn(new LLDPMessage(((OFPacketIn) msg).getPacketData()),this,((OFPacketIn) msg).getInPort());
+    					}
+    					else{
+    						//learn a host
+    						HostMapping newHost = topo.learn(new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getDataLayerSource(), new OFMatch().loadFromPacket((((OFPacketIn)msg).getPacketData()),((OFPacketIn)msg).getInPort()).getNetworkSource(),((OFPacketIn)msg).getInPort(), this);
+    						if(newHost != null){	//a new host has been discovered!!!!
+    							this.flowSolver.updateFlows(newHost);
+    						}
+    					}
+    					
+    				}
+    				else if(msg.getType() == OFType.FLOW_REMOVED){
+    					OFFlowRemoved flowRem = (OFFlowRemoved) msg;
+    					if(flowRem.getCookie() == 0){
+    						//Its one of our l2 learning flows that got removed
+    						OFMatch match = flowRem.getMatch();
+    						topo.ageIP(match.getNetworkSource(),this);
+    					}
+    				}
+    				else if(msg.getType() == OFType.STATS_REPLY){
+    					if(((OFStatisticsReply) msg).getStatisticsType() == OFStatisticsType.PORT_DESC){
+    						List<? extends OFStatistics> stats = ((OFStatisticsReply) msg).getStatistics();
+    						for(OFStatistics pStat: stats){
+    							ports.add(((OFPortDescription) pStat).getPort());
+    						}
+    					}
+    				}
+    				else if(msg.getType() == OFType.PORT_STATUS){
+    					topo.updateLinks(((OFPortStatus) msg).getDesc().getPortNumber(), this);	    					
+    				}
+    				else if(msg.getType() == OFType.ERROR){
+						//OFError err = ((OFError) msg);
+						//System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
+    				}
+    				
+    				
+    				if(flag == false){ //flag is used to skip l2_learning when the packetin is an LLDP message
+	    				//Evaluate if Layer 2 functionality is enabled and act upon it
+	    				if(controller.getL2Learning()){
+	    					//Add the message to the packet handler and activate a Thread for processing
+	    					pkhl.addPacket(msg);
+	    					pkhl.wakeUp();
 	    				}
-	    				else if(msg.getType() == OFType.FLOW_REMOVED){
-	    					OFFlowRemoved flowRem = (OFFlowRemoved) msg;
-	    					if(flowRem.getCookie() == 0){
-	    						//Its one of our l2 learning flows that got removed
-	    						OFMatch match = flowRem.getMatch();
-	    						topo.ageIP(match.getNetworkSource());
-	    					}
-	    				}
-	    				else if(msg.getType() == OFType.STATS_REPLY){
-	    					if(((OFStatisticsReply) msg).getStatisticsType() == OFStatisticsType.PORT_DESC){
-	    						List<? extends OFStatistics> stats = ((OFStatisticsReply) msg).getStatistics();
-	    						for(OFStatistics pStat: stats){
-	    							ports.add(((OFPortDescription) pStat).getPort());
-	    						}
-	    					}
-	    				}
-	    				else if(msg.getType() == OFType.PORT_STATUS){
-	    					topo.updateLinks(((OFPortStatus) msg).getDesc().getPortNumber(), this);	    					
-	    				}
-	    				else if(msg.getType() == OFType.ERROR){
-							OFError err = ((OFError) msg);
-							//System.out.println(err.getErrorCodeName(OFErrorType.values()[err.getErrorType()], (int) err.getErrorCode()));
-	    				}
-	    				
-	    				if(flag == false){ //flag is used to skip l2_learning when the packetin is an LLDP message
-		    				//Evaluate if Layer 2 functionality is enabled and act upon it
-		    				if(controller.getL2Learning()){
-		    					//Add the message to the packet handler and activate a Thread for processing
-		    					pkhl.addPacket(msg);
-		    					pkhl.wakeUp();
-		    				}
-		    				//TODO: come up with a way to let apps register and hear about PacketINs containing LLDP messages (should we even let this happen?)
-		    				for(Map.Entry<String,Registration> r: registrations.entrySet()){
-	    						r.getValue().addMsg(msg);
-	    					}
-	    				}
-	    				else{
-	    					flag = false;
-	    				}
-	    			}
-    	        }
-            }
+	    				//TODO: come up with a way to let apps register and hear about PacketINs containing LLDP messages (should we even let this happen?)
+	    				for(Map.Entry<String,Registration> r: registrations.entrySet()){
+    						r.getValue().addMsg(msg);
+    					}
+    				}
+    				else{
+    					flag = false;
+    				}
+    			}
+	        }
+        }
+        
         	
         	
-		} catch (Exception e) {
+		/*} catch (Exception e) {
 			stop();
 			LOGGER.log(Level.SEVERE, e.toString());
 			return;
-		}
+		}*/
         
         this.stop();
 	}
@@ -538,23 +566,20 @@ public class OFSwitch implements Runnable{
 	
 	//Method for Stopping an OFSwitch Thread
 	public void stop(){
-		t.interrupt();
+		if(t!=null) t.interrupt();
 		LOGGER.info("Stopping " +  threadName);
-		if(controller.getL2Learning()){
-			pkhl.stop();
-		}
 		//If Layer 2 functionality is enabled, stop packet handling
 		if(controller.getL2Learning()){
-			pkhl.stop();
+			if(pkhl!=null) pkhl.stop();
 			pkhl=null;
 		}
 		//Stop Stream Handler Thread
-		sthl.stop();
+		if(sthl!=null)sthl.stop();
 		sthl=null;
 		t=null;
 		try {
 			//Close the socket
-			sock.close();
+			if(sock!=null)sock.close();
 		} catch (IOException e) {
 
 		}
@@ -563,7 +588,6 @@ public class OFSwitch implements Runnable{
 	public Controller getController(){
 		return this.controller;
 	}
-	
 	
 	//Method for hot restart
 	public void restart(SocketChannel sock, OFMessageAsyncStream stream, 

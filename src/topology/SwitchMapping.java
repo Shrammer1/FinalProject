@@ -1,6 +1,5 @@
 package topology;
 
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -16,6 +15,7 @@ public class SwitchMapping{
 	private long created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 	private long ttl;
 	private ArrayList<HostMapping> hosts = new ArrayList<HostMapping>();
+	private HostTable hostTable;
 	
 	public SwitchMapping(int port, OFSwitch sw){
 		this.port = port;
@@ -32,7 +32,7 @@ public class SwitchMapping{
 		this.port = port;
 		this.sw = sw;
 		this.ttl = ttl * 3;
-		hosts.add(new HostMapping(mac,ip,ttl));
+		hosts.add(new HostMapping(mac,ip,ttl,this));
 	}
 	
 	public long getTimeAlive(){
@@ -44,6 +44,7 @@ public class SwitchMapping{
 		for(HostMapping h:tmp){
 			if(!(h.isValid())){
 				hosts.remove(h);
+				h.updateSwitches();
 			}
 		}
 		if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - created > ttl){
@@ -54,6 +55,7 @@ public class SwitchMapping{
 	}
 	
 	//TODO: make this a public static class/method
+	@SuppressWarnings("unused")
 	private String bytesToString(byte[] mac){
 		StringBuilder sb = new StringBuilder(18);
 	    for (byte b : mac) {
@@ -67,19 +69,20 @@ public class SwitchMapping{
 	public boolean updateHosts(ArrayList<HostMapping> hosts){
 		boolean flag = false;
 		boolean retVal = false;
-		ArrayList<HostMapping> mappingsChanged = new ArrayList<HostMapping>();
 		ArrayList<HostMapping> hostsToAdd = new ArrayList<>();
 		for(HostMapping h1: hosts){
 			flag = false;
 			for(HostMapping h2: this.hosts){
 				if(h2.equals(h1)){
 					created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-					h2.update(h1);
-					mappingsChanged.add(h2);
+					if(h2.update(h1)){
+						retVal = true;
+					}
 					flag = true;
 				}
 			}
 			if(!(flag)){ //we didnt find any hosts to update so add the host as a new one.
+				h1.setSwitchMap(this);
 				hostsToAdd.add(h1);
 				retVal = true;
 			}
@@ -92,7 +95,7 @@ public class SwitchMapping{
 	
 	public void addHost(byte[] mac, int ip, long ttl){
 		created = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-		HostMapping hostToAdd = new HostMapping(mac, ip,ttl);		
+		HostMapping hostToAdd = new HostMapping(mac, ip,ttl,this);		
 		for(HostMapping h:hosts){
 			if(h.equals(hostToAdd)){
 				h.update(hostToAdd); //theres already a host with this MAC, update it
@@ -167,6 +170,16 @@ public class SwitchMapping{
 		} else if (!sw.equals(other.sw))
 			return false;
 		return true;
+	}
+
+
+	public HostTable getHostTable() {
+		return hostTable;
+	}
+
+
+	public void setHostTable(HostTable hostTable) {
+		this.hostTable = hostTable;
 	}
 
 	

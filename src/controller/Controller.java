@@ -9,7 +9,6 @@ import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Queue;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -17,10 +16,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.openflow.io.OFMessageAsyncStream;
-import org.openflow.protocol.OFType;
 import org.openflow.protocol.factory.BasicFactory;
 
-import api.AppAPI;
 import api.ControllerAPI;
 import flowsolver.FlowSolver;
 import topology.TopologyMapper;
@@ -99,6 +96,8 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		    reg.rebind(threadName, this);
 		    swhl.start();
 		    topo.start();
+		    
+		    OFMessageAsyncStream.defaultBufferSize = 655360;
 		    
 		    //Always running and listening for tcp connections
 			while(true){

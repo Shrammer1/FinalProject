@@ -1,16 +1,13 @@
 package controller;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.rmi.AccessException;
 import java.rmi.RemoteException;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.openflow.io.OFMessageAsyncStream;
-import topology.TopologyMapper;
 
 /**
  * 

@@ -14,8 +14,6 @@ import org.openflow.protocol.OFType;
 import org.openflow.protocol.hello.OFHelloElement;
 import org.openflow.protocol.hello.OFHelloElementVersionBitmap;
 
-import topology.TopologyMapper;
-
 /**
  * 
  * @author Nicholas Landriault

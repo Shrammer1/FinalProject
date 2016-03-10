@@ -3,9 +3,8 @@ package flowsolver;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.openflow.protocol.OFFlowMod;
-
 import controller.OFSwitch;
+import topology.HostMapping;
 
 public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 
@@ -25,11 +24,7 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 		else{
 			entry.removeFlowRequest(flowToRemove.getFlowRequest());
 			if(entry.getFlowRequest().size()==0){
-				for(OFSwitch sw:entry.getSwitchs()){
-					OFFlowMod mod = entry.getFlowMod().clone();
-					mod.setCommand((byte) 0x03);
-					if(sw != null)sw.sendMsg(mod);
-				}
+				entry.newSwitchSet(new ArrayList<OFSwitch>()); //update the switches on the flow entry with nothing causing all switches to be removed and all flows to be retracted
 				//System.out.println(entry.hashCode());
 				return this.remove(entry.hashCode());
 			}
@@ -64,6 +59,36 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 		
 		return entry;
 	}
+
+	/**
+	 * Finds all FlowEntry objects that are relevant to the provided HostMapping
+	 * @param host Host to search for
+	 * @return ArrayList of relevant FlowEnty objects
+	 */
+	public ArrayList<FlowEntry> getRelevantFlows(HostMapping host) {
+		ArrayList<FlowEntry> retVal = new ArrayList<FlowEntry>();
+		for(FlowEntry entry:this.values()){
+			if(entry.isRelevant(host)) retVal.add(entry);
+		}
+		return retVal;
+	}
+	
+	public boolean isAllowed(HostMapping host) {
+		ArrayList<FlowEntry> relevantFlows = new ArrayList<FlowEntry>(getRelevantFlows(host));
+		short priority = 0;
+		FlowEntry entry = null;
+		
+		for(FlowEntry toCheck:relevantFlows){
+			if(toCheck.getFlowMod().getPriority() > priority){
+				entry = toCheck;
+			}
+		}
+		if(entry == null) return true;
+		
+		return entry.getAction();
+		
+	}
 	
 	
+
 }

@@ -32,14 +32,39 @@ public class FlowSolverTester {
 		networks.add(n.array());
 		src.setNetworks(networks);
 		*/
-		networks = new ArrayList<byte[]>();
-		n = ByteBuffer.allocate(4);
-		n.put((byte) 8);
-		n.put((byte) 8);
-		n.put((byte) 8);
-		n.put((byte) 8);
-		networks.add(n.array());
-		src.setNetworks(networks);
+		int test = 1;
+		switch(test){
+		case 0:
+			networks = new ArrayList<byte[]>();
+			n = ByteBuffer.allocate(4);
+			n.put((byte) 8);
+			n.put((byte) 8);
+			n.put((byte) 8);
+			n.put((byte) 8);
+			networks.add(n.array());
+			src.setNetworks(networks);
+			break;
+		case 1:
+			networks = new ArrayList<byte[]>();
+			n = ByteBuffer.allocate(4);
+			n.put((byte) 8);
+			n.put((byte) 8);
+			n.put((byte) 4);
+			n.put((byte) 4);
+			networks.add(n.array());
+			src.setNetworks(networks);
+			break;
+		case 2:
+			networks = new ArrayList<byte[]>();
+			n = ByteBuffer.allocate(4);
+			n.put((byte) 172);
+			n.put((byte) 217);
+			n.put((byte) 2);
+			n.put((byte) 142);
+			networks.add(n.array());
+			src.setNetworks(networks);
+			break;
+		}
 		
 		
 		networks = new ArrayList<byte[]>();

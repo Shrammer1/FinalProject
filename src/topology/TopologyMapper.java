@@ -1,6 +1,5 @@
 package topology;
 
-import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
@@ -16,11 +15,13 @@ public class TopologyMapper implements Runnable{
 	private String threadName;
 	private  ArrayList<OFSwitch> switches;
 	private ArrayList<SwitchMapping> macTable = new ArrayList<SwitchMapping>();
-	private HostTable hosts = new HostTable();
+	private HostTable hosts = new HostTable(this);
 	private LinkTable links = new LinkTable();
+	private Controller controller;
 	
 	public TopologyMapper(String name,Controller controller) {
 		this.switches = controller.getSwitches();
+		this.setController(controller);
 		this.threadName = name;
 	}
 	
@@ -60,9 +61,23 @@ public class TopologyMapper implements Runnable{
 		return hosts.getHost(ipAddress);
 	}
 	
+	public ArrayList<OFSwitch> getMappings(ArrayList<Integer> ipArray) {
+		ArrayList<OFSwitch> retVal = new ArrayList<OFSwitch>();
+		for(int ip:ipArray){
+			retVal.add(getMapping(ip));
+		}
+		return retVal;
+	}
+	
 	public ArrayList<OFSwitch> getMappings(int ipAddress, int mask){
 		return hosts.getHosts(ipAddress,mask);
 	}
+	
+	public ArrayList<HostMapping> getMappings(OFSwitch sw){
+		return hosts.getMappings(sw);
+	}
+	
+	
 	
 	
 	public void stop(){
@@ -92,15 +107,17 @@ public class TopologyMapper implements Runnable{
 		}
 	}
 	
-	public synchronized boolean learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
+	public synchronized HostMapping learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
 		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 60);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
 		}
 		if((links.getLink(inPort, sw)) == null){
-			return hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,60));
+			boolean newHost = hosts.add(new SwitchMapping(inPort, sw, macAddr, ipAddr,60));
+			if(newHost)return new HostMapping(macAddr, ipAddr, 0); //if its a new host send back a mapping for its values 
+			else return null; //if its not a new host return null so we can detect nothing new was added
 		}
-		return false;
+		return null;
 	}
 
 	public synchronized void learn(LLDPMessage lldpMessage, OFSwitch sw, int inPort) {
@@ -165,11 +182,25 @@ public class TopologyMapper implements Runnable{
 		
 	}
 	
+	/**
+	 * Used to add mappings with OFMatch objects to track when MAC addresses are ready to expire
+	 * @param map The MacMapping to update with new OFMatchs
+	 */
 	public void registerMapping(MacMapping map){
 		hosts.updateMappings(map);
 	}
 	
-	public void ageIP(int ip) {
-		hosts.ageIPMapping(ip);
+	public void ageIP(int ip, OFSwitch ofSwitch) {
+		hosts.ageIPMapping(ip, ofSwitch);
+	}
+
+
+	public Controller getController() {
+		return controller;
+	}
+
+
+	public void setController(Controller controller) {
+		this.controller = controller;
 	}
 }

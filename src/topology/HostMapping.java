@@ -3,16 +3,15 @@ package topology;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.TimeUnit;
 
 public class HostMapping {
 	private MacMapping mac;
 	private ArrayList<IPMapping> ips = new ArrayList<IPMapping>();
-	
+	private SwitchMapping switchMap;
 	
 	public byte[] getMac() {
+		if(mac==null) return null;
 		return mac.getMacAddress();
 	}
 
@@ -34,33 +33,59 @@ public class HostMapping {
 			IPMapping ip = i.next();
 			if(!(ip.isValid())){
 				i.remove();
+				ip.updateSwitches();
 				//System.out.println("Deleting old ip: " + intToIP(ip.getIP()));
 			}
 		}
 		return mac.isValid();
 	}
 	
-	private String intToIP(int ip){
-		  byte[] addr = new byte[] {
-		    (byte)((ip >>> 24) & 0xff),
-		    (byte)((ip >>> 16) & 0xff),
-		    (byte)((ip >>>  8) & 0xff),
-		    (byte)((ip       ) & 0xff)};
-
-		  try {
-			return InetAddress.getByAddress(addr).getHostAddress();
-		  } catch (UnknownHostException e) {
-			e.printStackTrace();
-		  }
-		  return null;
+	public String toString(){
+		String ips = "";
+		for(IPMapping ip:this.ips){
+			ips = ips + intToIP(ip.getIP()) + " | ";
 		}
+		return bytesToString(mac.getMacAddress()) + " : " + ips + "\n";
+	}
 	
-	public void update(HostMapping map){
+	
+	private String intToIP(int ip){
+	  byte[] addr = new byte[] {
+	    (byte)((ip >>> 24) & 0xff),
+	    (byte)((ip >>> 16) & 0xff),
+	    (byte)((ip >>>  8) & 0xff),
+	    (byte)((ip       ) & 0xff)};
+
+	  try {
+		return InetAddress.getByAddress(addr).getHostAddress();
+	  } catch (UnknownHostException e) {
+		e.printStackTrace();
+	  }
+	  return null;
+	}
+		
+		
+	//TODO: make this a public static class/method
+	private String bytesToString(byte[] mac){
+		StringBuilder sb = new StringBuilder(18);
+	    for (byte b : mac) {
+	        if (sb.length() > 0)
+	            sb.append(':');
+	        sb.append(String.format("%02x", b));
+	    }
+	    return sb.toString();
+	}
+	
+	public boolean update(HostMapping map){
 		this.mac.setMacAddress(map.getMac());
+		this.mac.setHost(this);
+		boolean retVal = false;
 		for(IPMapping ipToAdd:map.ips){
 			if(ipToAdd.getIP() != 0){
 				if(!(this.ips.contains(ipToAdd))){
-					this.ips.add(ipToAdd);
+					ipToAdd.setHost(this);
+					this.ips.add(ipToAdd); // new IP added
+					retVal = true;
 				}
 				else{
 					//we already know about the hosts IP mapping, we need to find it and refresh it so it doesnt time out.
@@ -72,15 +97,28 @@ public class HostMapping {
 				}
 			}
 		}
+		return retVal;
 	}
 	
 	public HostMapping(byte[] mac, int ip,long ttl){
-		this.mac = new MacMapping(mac,ttl);
+		this.mac = new MacMapping(mac,ttl,this);
 		if(ip != 0){
-			this.ips.add(new IPMapping(ip));
+			this.ips.add(new IPMapping(ip,this));
 		}
 	}
 
+	public HostMapping(byte[] mac, int ip,long ttl,SwitchMapping sw){
+		this.mac = new MacMapping(mac,ttl,this);
+		this.setSwitchMap(sw);
+		if(ip != 0){
+			this.ips.add(new IPMapping(ip,this));
+		}
+	}
+	
+	public HostMapping(){
+		
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;
@@ -108,6 +146,26 @@ public class HostMapping {
 
 	public MacMapping getMacMapping() {
 		return this.mac;
+	}
+
+	public ArrayList<Integer> getIPArray() {
+		ArrayList<Integer> retVal = new ArrayList<Integer>();
+		for(IPMapping ip:ips){
+			retVal.add(ip.getIP());
+		}
+		return retVal;
+	}
+
+	public SwitchMapping getSwitchMap() {
+		return switchMap;
+	}
+
+	public void setSwitchMap(SwitchMapping switchMap) {
+		this.switchMap = switchMap;
+	}
+
+	public void updateSwitches() {
+		mac.updateSwitches();
 	}
 
 	

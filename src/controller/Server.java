@@ -1,15 +1,6 @@
 package controller;
 
-import java.nio.ByteBuffer;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-
-import flowsolver.Domain;
-import flowsolver.DomainEntry;
-import flowsolver.DomainType;
-import flowsolver.FlowAction;
-import flowsolver.FlowRequest;
-import flowsolver.TrafficClass;
 
 public class Server {
 
@@ -94,6 +85,7 @@ public class Server {
 	 * PRIVATE METHODS
 	 **************************************************/
 	
+	@SuppressWarnings("unused")
 	private static long ipToLong(String ipAddress) {
 
 		String[] ipAddressInArray = ipAddress.split("\\.");

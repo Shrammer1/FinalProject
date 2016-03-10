@@ -6,12 +6,8 @@ import java.util.List;
 
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
-import org.openflow.protocol.OFOXMField;
-import org.openflow.protocol.OFOXMFieldType;
-import org.openflow.protocol.OFPort;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
-import org.openflow.protocol.action.OFActionType;
 import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.protocol.instruction.OFInstructionGotoTable;
@@ -19,6 +15,7 @@ import org.openflow.protocol.instruction.OFInstructionGotoTable;
 import controller.Application;
 import controller.Controller;
 import controller.OFSwitch;
+import topology.HostMapping;
 
 public class FlowSolver {
 	private Controller controller;
@@ -27,6 +24,10 @@ public class FlowSolver {
 	
 	public FlowSolver(Controller ctrl){
 		this.controller = ctrl;
+	}
+	
+	public ArrayList<FlowEntry> getRelevantFlows(HostMapping host){
+		return flows.getRelevantFlows(host);
 	}
 	
 	public boolean requestAddFlow(FlowRequest request, Application app){
@@ -40,20 +41,11 @@ public class FlowSolver {
 		ArrayList<FlowEntry> flowsToAdd = buildFlows(request, app.getPriority() + request.getPriority());
 		if(flowsToAdd == null) return false;
 		
-		//TODO: add code that properly updates the FlowEntryTable and sends out new flows
 		
 		for(FlowEntry flowToAdd:flowsToAdd){
 			flows.add(flowToAdd);
 		}
 		
-		
-		
-		//This magical code takes a sledge hammer to the controller and forces out flow mods, its for testing only
-		/*
-		for(FlowEntry e:flowsToAdd){
-			e.getSwitch().get(0).sendMsg(e.getFlowMod());
-		}
-		*/
 		return true;
 	}
 	
@@ -80,10 +72,6 @@ public class FlowSolver {
 		portType = request.getTrafficClass().getPortType();
 		srcPortNum = request.getTrafficClass().getSrcPort();
 		dstPortNum = request.getTrafficClass().getDstPort();
-		
-		
-		
-		//if the application asks for a priority that is out of the valid range reject the flow.
 		
 		
 		//Step 1:
@@ -197,8 +185,7 @@ public class FlowSolver {
 		if(srcIsMAC){
 			for(byte[] src:srcList){
 				FlowEntry entry = new FlowEntry();
-				entry.setActive(false);
-				entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
+				entry.addSwitch(controller.getTopologyMapper().getMapping(src));
 				
 				OFFlowMod mod = new OFFlowMod();
 				OFMatch match = new OFMatch();
@@ -232,9 +219,8 @@ public class FlowSolver {
 			for(byte[] src:srcList){
 				if(src.length == 4){
 					FlowEntry entry = new FlowEntry();
-					entry.setActive(false);
 					//src is a single IP
-					entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+					entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 					OFFlowMod mod = new OFFlowMod();
 					OFMatch match = new OFMatch();
 					mod.setCommand((byte) 0);
@@ -266,9 +252,8 @@ public class FlowSolver {
 				else if(src.length == 5){
 					ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
 					FlowEntry entry = new FlowEntry();
-					entry.setActive(false);
 					for(OFSwitch sw:switches){
-						entry.addSwitchs(sw);
+						entry.addSwitch(sw);
 					}
 					//src is a single IP
 					OFFlowMod mod = new OFFlowMod();
@@ -329,8 +314,7 @@ public class FlowSolver {
 				for(byte[] src:srcList){
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
-						entry.setActive(false);
-						entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
+						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
 						
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -368,8 +352,7 @@ public class FlowSolver {
 				for(byte[] src:srcList){
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
-						entry.setActive(false);
-						entry.addSwitchs(controller.getTopologyMapper().getMapping(src));
+						entry.addSwitch(controller.getTopologyMapper().getMapping(src));
 						
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -415,15 +398,14 @@ public class FlowSolver {
 				for(byte[] src:srcList){
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
-						entry.setActive(false);
 						if(src.length==5){
 							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
 							for(OFSwitch sw:switches){
-								entry.addSwitchs(sw);
+								entry.addSwitch(sw);
 							}
 			            }
 			            else if(src.length==4){
-			            	entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 			            }
 						OFFlowMod mod = new OFFlowMod();
 						OFMatch match = new OFMatch();
@@ -467,15 +449,14 @@ public class FlowSolver {
 				for(byte[] src:srcList){
 					for(byte[] dst:dstList){
 						FlowEntry entry = new FlowEntry();
-						entry.setActive(false);
 						if(src.length==5){
 							ArrayList<OFSwitch> switches = controller.getTopologyMapper().getMappings(ByteBuffer.wrap(src).getInt(), (int) src[4]);
 							for(OFSwitch sw:switches){
-								entry.addSwitchs(sw);
+								entry.addSwitch(sw);
 							}
 			            }
 			            else if(src.length==4){
-			            	entry.addSwitchs(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
+			            	entry.addSwitch(controller.getTopologyMapper().getMapping(ByteBuffer.wrap(src).getInt()));
 			            }
 						
 						OFFlowMod mod = new OFFlowMod();
@@ -525,6 +506,58 @@ public class FlowSolver {
 		
 		
 		return retVal;
+	}
+
+	public void updateFlows(HostMapping newHost) {
+		//TODO: this should find all switches that need to be updated for a new host, then send the updates
+		//Steps:
+		//Step 1: Find all switches that could be effected by the topology change
+		
+		ArrayList<OFSwitch> switches = new ArrayList<OFSwitch>();
+		switches.add(controller.getTopologyMapper().getMapping(newHost.getMac()));
+		ArrayList<OFSwitch> switchesToAdd = controller.getTopologyMapper().getMappings(newHost.getIPArray());
+		
+		for(OFSwitch sw:switchesToAdd){
+			if(!(switches.contains(sw))) switches.add(sw);
+		}
+		
+		//Step 2: Look through all FlowEntry objects, searching for FlowEntrys that are relevant for the Host, this means that if the Host falls within the domain of the FlowEntry 
+		//the FlowEntry is relevant
+		
+		ArrayList<FlowEntry> entries = new ArrayList<FlowEntry>(); 
+		entries.addAll(flows.getRelevantFlows(newHost));
+		
+		
+		//Step 3: Replace the switches list on each of the relevant FlowEntrys with the one we generated in Step 1. This operation should also send the FlowMods out either adding flows 
+		//or removing them 
+		for(FlowEntry entry:entries){
+			entry.newSwitchSet(switches);
+		}
+		
+	}
+
+	public boolean isAllowed(HostMapping host) {
+		return flows.isAllowed(host);
+	}
+
+	public void removeIfAble(ArrayList<FlowEntry> relevantFlows) {
+		if(relevantFlows.size()==0) return;
+		for(FlowEntry entry:relevantFlows){
+			ArrayList<OFSwitch> swToRemove = new ArrayList<>();
+			for(OFSwitch sw:entry.getSwitchs()){
+				ArrayList<HostMapping> hosts = controller.getTopologyMapper().getMappings(sw);
+				for(HostMapping host:hosts){
+					if(entry.isRelevant(host)){
+						break;
+					}
+					//you can only get to this line if ALL hosts on OFSwitch sw are not valid for FlowEntry entry
+					swToRemove.add(sw);
+				}
+			}
+			for(OFSwitch sw:swToRemove){
+				entry.removeSwitch(sw);
+			}
+		}
 	}
 
 }

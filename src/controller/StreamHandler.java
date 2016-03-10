@@ -1,5 +1,7 @@
 package controller;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,17 +26,20 @@ public class StreamHandler implements Runnable{
 	
 	private String threadName;
 	private OFMessageAsyncStream stream;
+	private OFSwitch sw;
 	private Thread t;
 	
 	
 	/**************************************************
 	 * CONSTRUCTORS
 	 **************************************************/	
-	public StreamHandler(String name, OFMessageAsyncStream strm){
+	public StreamHandler(String name, OFMessageAsyncStream strm, OFSwitch sw){
 		threadName = name;
 		stream = strm;
+		this.sw=sw;
 	}
 	
+	//TODO: properly handle these IO exceptions for when the stream gets cut
 	//Method to send a single OFMessage
 	protected synchronized void sendMsg(OFMessage msg) throws IOException {
 		synchronized (stream) 
@@ -49,7 +54,6 @@ public class StreamHandler implements Runnable{
 	
 	//Method to send a group of OFMessages
 	protected synchronized void sendMsg(List<OFMessage> l) throws IOException{
-		
 		synchronized (stream) 
 		{
 			for(OFMessage msg:l){
@@ -87,14 +91,17 @@ public class StreamHandler implements Runnable{
 		    }
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.toString());
+			stop();
+			sw.stop();
 		} catch (InterruptedException e) {
-			//This is normal behavior when stopping a vSwitch
+			//This is normal behavior when stopping a switch
 		}
 	}
 
 	//Method to interrupt a StreamHandler Thread
 	public void stop(){
 		t.interrupt();
+		stream=null;
 		LOGGER.info("Stopping " +  threadName);
 	}
 	
@@ -105,5 +112,19 @@ public class StreamHandler implements Runnable{
          t = new Thread (this, threadName);
          t.start ();
       }
+	}
+
+	public Collection<? extends OFMessage> read() throws IOException {
+		ArrayList<OFMessage> retVal = new ArrayList<OFMessage>();
+		if(stream==null){
+			sw.stop();
+			return retVal;
+		}
+		synchronized (stream) 
+    	{
+			retVal.addAll(stream.read());
+		}
+		//return null;
+		return retVal;
 	}
 }

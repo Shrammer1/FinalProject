@@ -1,13 +1,12 @@
 package controller;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -22,6 +21,7 @@ import org.openflow.protocol.instruction.OFInstruction;
 import org.openflow.protocol.instruction.OFInstructionApplyActions;
 import org.openflow.util.U16;
 
+import topology.HostMapping;
 import topology.MacMapping;
 
 /**
@@ -78,7 +78,8 @@ public class PacketHandler implements Runnable{
 	 * PRIVATE METHODS
 	 **************************************************/
 	
-	private void handle_PACKETIN(OFMessage msg){
+	
+	private void handlePacketIn(OFMessage msg){
 		OFPacketIn pi;
 		OFMatch match = new OFMatch();
     	OFMatch pktIn = new OFMatch();
@@ -133,18 +134,17 @@ public class PacketHandler implements Runnable{
         if (outPort != null) {
             //Retrieves an OFMessage instance corresponding to the specified OFType
         	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
-            fm.setBufferId(bufferId);
             fm.setCommand(OFFlowMod.OFPFC_ADD);
             fm.setCookie(0);
             fm.setFlags((short) 0);
             fm.setIdleTimeout((short) 5);
             fm.setFlags((short) 0x0001);
-            
+            //fm.setBufferId(bufferId);
             match.setInPort(pi.getInPort());
             match.setDataLayerDestination(pktIn.getDataLayerDestination());
             if(pktIn.getDataLayerType() == (short) 0x0800){
             	match.setDataLayerType((short) 0x0800);
-                match.setNetworkSource(pktIn.getNetworkSource());
+               match.setNetworkSource(pktIn.getNetworkSource());
             }
             else{
             	match.setDataLayerType(pktIn.getDataLayerType());
@@ -172,10 +172,10 @@ public class PacketHandler implements Runnable{
             sw.sendMsg(fm);
         }
 
-        //Sending packet out
+        //Sending packet out if its allowed by the flow solver
         //if (outPort == null || pi.getBufferId() == 0xffffffff || pktIn.getDataLayerType() != (short) 0x0800){
-        if (outPort == null || pi.getBufferId() == 0xffffffff){
-            OFPacketOut po = new OFPacketOut();
+        if (outPort == null && sw.getController().getFlowSolver().isAllowed(new HostMapping(pktIn.getDataLayerSource(),pktIn.getNetworkSource(),0))){
+        	OFPacketOut po = new OFPacketOut();
             po.setBufferId(bufferId);
             po.setInPort(pi.getInPort());
 
@@ -200,6 +200,8 @@ public class PacketHandler implements Runnable{
             }
             sw.sendMsg(po);
         }
+        
+        int i =1;
 	}
 	
 	
@@ -269,7 +271,7 @@ public class PacketHandler implements Runnable{
 	    	}
 	    	else{
 	    		if(msg.getType() == OFType.PACKET_IN){
-			    	handle_PACKETIN(msg);
+			    	handlePacketIn(msg);
 	    		}    		
     		}
 		    //Clearing the list of OFMessages
