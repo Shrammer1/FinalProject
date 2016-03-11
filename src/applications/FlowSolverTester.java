@@ -32,15 +32,16 @@ public class FlowSolverTester {
 		networks.add(n.array());
 		src.setNetworks(networks);
 		*/
-		int test = 1;
+		int test = 0;
 		switch(test){
 		case 0:
 			networks = new ArrayList<byte[]>();
-			n = ByteBuffer.allocate(4);
+			n = ByteBuffer.allocate(5);
 			n.put((byte) 8);
 			n.put((byte) 8);
 			n.put((byte) 8);
 			n.put((byte) 8);
+			n.put((byte) 16);
 			networks.add(n.array());
 			src.setNetworks(networks);
 			break;

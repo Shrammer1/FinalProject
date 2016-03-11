@@ -174,7 +174,7 @@ public class PacketHandler implements Runnable{
 
         //Sending packet out if its allowed by the flow solver
         //if (outPort == null || pi.getBufferId() == 0xffffffff || pktIn.getDataLayerType() != (short) 0x0800){
-        if (outPort == null && sw.getController().getFlowSolver().isAllowed(new HostMapping(pktIn.getDataLayerSource(),pktIn.getNetworkSource(),0))){
+        if (sw.getController().getFlowSolver().isAllowed(new HostMapping(pktIn.getDataLayerSource(),pktIn.getNetworkSource(),0))){
         	OFPacketOut po = new OFPacketOut();
             po.setBufferId(bufferId);
             po.setInPort(pi.getInPort());
@@ -182,8 +182,10 @@ public class PacketHandler implements Runnable{
             //Setting actions
             OFActionOutput action = new OFActionOutput();
             action.setMaxLength((short) 0);
+            
             //STEP_3_B: If the output port is unknown, flood the packet.
             action.setPort((short) ((outPort == null) ? OFPort.OFPP_FLOOD.getValue() : outPort));
+            
             List<OFAction> actions = new ArrayList<OFAction>();
             actions.add(action);
             po.setActions(actions);
@@ -201,7 +203,6 @@ public class PacketHandler implements Runnable{
             sw.sendMsg(po);
         }
         
-        int i =1;
 	}
 	
 	

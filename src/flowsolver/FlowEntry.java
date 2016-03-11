@@ -77,6 +77,9 @@ public class FlowEntry{
 		int bits = match.getNetworkSourceMask();
 		byte[] mac = match.getDataLayerSource();
 		ArrayList<Integer> ipsToCheck = host.getIPArray();
+		
+		//System.out.println("Check");
+		
 		if(ipsToCheck.contains(ipaddr)){
 			return true;
 		}
@@ -85,11 +88,13 @@ public class FlowEntry{
 				return true;
 			}
 		}
-		for(int ip:ipsToCheck){
-			int mask = -1 << (32 - bits);
-			if ((ip & mask) == (ipaddr & mask)) {
-			    return true;
-			}	
+		if(bits!=0){
+			for(int ip:ipsToCheck){
+				int mask = -1 << (32 - bits);
+				if ((ip & mask) == (ipaddr & mask)) {
+				    return true;
+				}	
+			}
 		}
 		return false;
 	}
