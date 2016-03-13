@@ -484,7 +484,7 @@ public class FlowSolver {
 			            match.setDataLayerType((short) 0x0800);
 			            if(src.length==5){	
 			            	int mask = -1 << (32 - src[4]);
-			            	match.setNetworkDestinationMask(ByteBuffer.wrap(src).getInt(), mask);
+			            	match.setNetworkSourceMask(ByteBuffer.wrap(src).getInt(), mask);
 			            }
 			            else if(src.length==4){
 			            	match.setNetworkSource(ByteBuffer.wrap(src).getInt());

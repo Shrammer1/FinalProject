@@ -74,7 +74,7 @@ public class FlowEntry{
 	public boolean isRelevant(HostMapping host) {
 		OFMatch match = flowMod.getMatch();
 		int ipaddr = match.getNetworkSource();
-		int bits = match.getNetworkSourceMask();
+		int mask = match.getNetworkSourceMask();
 		byte[] mac = match.getDataLayerSource();
 		ArrayList<Integer> ipsToCheck = host.getIPArray();
 		
@@ -88,9 +88,8 @@ public class FlowEntry{
 				return true;
 			}
 		}
-		if(bits!=0){
+		if(mask!=0){
 			for(int ip:ipsToCheck){
-				int mask = -1 << (32 - bits);
 				if ((ip & mask) == (ipaddr & mask)) {
 				    return true;
 				}	

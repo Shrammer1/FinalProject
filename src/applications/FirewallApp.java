@@ -58,7 +58,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {
 //		this.controller = controller;
-		this.api = (AppAPI) controller.register(priority);
+		this.api = (AppAPI) controller.register(priority, this.toStub(this));
 	}
 	
 	public void test() throws RemoteException {
@@ -68,6 +68,10 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		
 		domA.getNetworks().add(new byte[] {(byte) 192,(byte) 168,10,0,24}); // domA = 192.168.10.0/24
 		domB.getNetworks().add(new byte[] {(byte) 192,(byte) 168,20,0,24}); // domA = 192.168.20.0/24
+		
+		domains.put("TestDomain1", domA);
+		domains.put("TestDomain2", domB);
+		
 		
 		// push a flow request that blocks all traffic from A to B
 		FlowRequest req = new FlowRequest(domA, domB, new TrafficClass(), 0, FlowAction.DROP);
