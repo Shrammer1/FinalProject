@@ -1,18 +1,20 @@
 package controller;
 
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.Queue;
 
 import org.openflow.protocol.OFType;
-
+import org.openflow.util.Unsigned;
+import api.CLIModule;
 import api.AppAPI;
 import flowsolver.FlowRequest;
 
 public class Application extends UnicastRemoteObject implements AppAPI{
 	
-	//TODO: should applications ever expire? if yes then find some way to have applications expire so that objects may be cleaned up. 
+	//TODO: Apps must expire should their remoteApp no longer be available, figure out some way to clean them up
 	
 	private static final long serialVersionUID = 5697031628246495923L;
 
@@ -22,11 +24,29 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 	private int priority;
 	private int id;
 	private Controller controller;
+	private Remote remoteApp;
+	
+	public Application(int priority, Controller controller, Remote remoteApp2) throws RemoteException{
+		this.priority = priority;
+		this.controller = controller;
+		this.id = Application.getNextID();
+		this.setRemoteApp(remoteApp2);
+	}
 	
 	public Application(int priority, Controller controller) throws RemoteException{
 		this.priority = priority;
 		this.controller = controller;
 		this.id = Application.getNextID();
+	}
+	
+	public boolean isAlive(){
+		try{
+			((CLIModule) remoteApp).getApplicationContextName();
+		}
+		catch(RemoteException e){
+			return false;
+		}
+		return true;
 	}
 	
 	public String getApplicationName() throws RemoteException{
@@ -231,6 +251,14 @@ public class Application extends UnicastRemoteObject implements AppAPI{
 	//STATIC METHOD FOR GETTING UNIQUE IDs
 	private static int getNextID(){
 		return nextID++;
+	}
+
+	public Remote getRemoteApp() {
+		return remoteApp;
+	}
+
+	public void setRemoteApp(Remote remoteApp2) {
+		this.remoteApp = remoteApp2;
 	}
 
 	

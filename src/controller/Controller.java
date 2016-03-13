@@ -2,6 +2,7 @@ package controller;
 import java.io.IOException;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -9,6 +10,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.FileHandler;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
@@ -98,16 +101,30 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		    topo.start();
 		    
 		    OFMessageAsyncStream.defaultBufferSize = 655360;
-		    
+		    BasicFactory factory = BasicFactory.getInstance();
 		    //Always running and listening for tcp connections
+		    SocketChannel sock = null;
+		    long lastCheck = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
 			while(true){
-				BasicFactory factory = BasicFactory.getInstance();
-			    SocketChannel sock = null;
-			    while(sock==null){
-			    	Thread.sleep(0,1);
-			    	sock = listenSock.accept();
+				Thread.sleep(0,1);
+		    	sock = listenSock.accept();
+			    if(sock!=null){
+			    	swhl.addSwitch(sock,new OFMessageAsyncStream(sock, factory));
+			    	sock=null;
 			    }
-		        swhl.addSwitch(sock,new OFMessageAsyncStream(sock, factory));
+			    if(TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - lastCheck > 5){
+			    	Iterator<Application> itr = apps.iterator();
+			    	while(itr.hasNext()){
+			    		Application app = itr.next();
+			    		if(!(app.isAlive())){
+			    			itr.remove();
+			    			LOGGER.log(Level.INFO, "Application \'" + app.getApplicationName() + "\' has expired.");
+			    		}
+			    	}
+			    	lastCheck = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
+			    }
+						
+			    
 			}
 		}
 		catch(Exception e){
@@ -191,12 +208,20 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	}
 
 	
+	public Object register(int priority, Remote remoteApp) throws RemoteException {
+		Application newApp = new Application(priority,this,remoteApp);
+		apps.add(newApp);
+		return newApp;
+	}
+	
+	@Override
 	public Object register(int priority) throws RemoteException {
 		Application newApp = new Application(priority,this);
 		apps.add(newApp);
 		return newApp;
 	}
-
+	
+	
 
 	@Override
 	public String listApplications() throws RemoteException {
@@ -206,4 +231,17 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		}
 		return retVal;
 	}
+
+
+	@Override
+	public ArrayList<Remote> getCLIApplications() throws RemoteException {
+		ArrayList<Remote> retVal = new ArrayList<Remote>();
+		for(Application app:apps){
+			retVal.add(app.getRemoteApp());
+		}
+		return retVal;
+	}
+
+
+	
 }
