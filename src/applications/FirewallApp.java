@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 
@@ -58,7 +59,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {
 //		this.controller = controller;
-		this.api = (AppAPI) controller.register(priority, this.toStub(this));
+		this.api = (AppAPI) controller.register(priority, RemoteObject.toStub(this));
 	}
 	
 	public void test() throws RemoteException {
@@ -72,7 +73,6 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		domains.put("TestDomain1", domA);
 		domains.put("TestDomain2", domB);
 		
-		
 		// push a flow request that blocks all traffic from A to B
 		FlowRequest req = new FlowRequest(domA, domB, new TrafficClass(), 0, FlowAction.DROP);
 		api.requestAddFlow(req);
@@ -83,23 +83,21 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		 * This method is just to test the interactive CLI functionality
 		 */
 		try {
-		String appName = getApplicationContextName();
-		System.out.print("cli/" + appName + "> ");
-		while (true) {
-			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-			String input = "";
-			try {
-				input = br.readLine();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-			String output = executeCommand(input);
-			System.out.println(output);
-			System.out.println();
+			String appName = getApplicationContextName();
 			System.out.print("cli/" + appName + "> ");
-		}
-		}
-		catch (RemoteException e) {
+			while (true) {
+				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+				String input = "";
+				try {
+					input = br.readLine();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				String output = executeCommand(input);
+				System.out.println(output);
+				System.out.print(appName + "> ");
+			}
+		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
 	}
@@ -130,12 +128,13 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 			case "show":
 				switch (args[1]) {
 				case "domain-list":
-					return getDomains().toString();
+					return printDomains();
 				case "policy-list":
-					return getFlowReqs().toString();
+					return printFlowReqs();
 				}
 				break;
 			case "delete":
+				// TODO: Implement deleting domains and policies
 				break;
 			case "domain": // domain <name> ...
 				if (args.length < 5)
@@ -151,25 +150,51 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				case "add":
 					switch (args[3]) {
 					case "ip": // domain X add ip <list>
-						for (int i = 4; i < args.length; i++) {
+						for (int i = 4; i < args.length; i++) {							
 							// Parse the ip network argument, which is in CIDR notation with an optional mask.
 							// If the mask is not present, assume the mask is /32. 
 							byte[] prefix = cidrToBytes(args[i]);
+							
+							// TODO don't add the prefix if we already contain it
+							// have to iterate the networks array and run Arrays.equals() on each element
+							
 							if (prefix == null) {
-								return "Bad prefix: " + args[i];
+								return "Bad IPv4 prefix: " + args[i];
 							}
 							dom.getNetworks().add(prefix);
 						}
 						return "";
 					case "mac": // domain X add mac <list>
-						break;
+						for (int i = 4; i < args.length; i++) {
+							// format should be "00:00:01:23:45:67"
+							byte[] mac = macToBytes(args[i]);
+							
+							// TODO don't add the mac if we already contain it
+							// have to iterate the networks array and run Arrays.equals() on each element
+							
+							if (mac == null) {
+								return "Bad MAC address: " + args[i];
+							}
+							dom.getMacList().add(mac);
+						}
+						return "";
 					case "domain": // domain X add domain <list>
-						break;
+						for (int i = 4; i < args.length; i++) {
+							// Search for the domain given by name and make sure it exists 
+							String domainName = args[i];
+							Domain subDomain = domains.get(domainName);
+							if (subDomain == null)
+								return "Domain does not exist: " + args[i];
+							else
+								dom.getSubDomains().add(domains.get(domainName));
+						}
+						return "";
 					}
 					break;
 				}
 				break;
 			case "policy":
+				// TODO: Implement adding policies
 				break;
 			default:
 			}
@@ -181,11 +206,125 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	}
 	
 	/**
+	 * Generates console output that describes the contents of all configured Domains.
+	 * @return
+	 */
+	private String printDomains() {
+		StringBuilder sb = new StringBuilder();
+		for (String name : domains.keySet()) {
+			Domain d = domains.get(name);
+			sb.append("\nDomain name: ").append(name).append("\n");
+			sb.append("----------------------------------------\n");
+			if (!d.getNetworks().isEmpty()) {
+				sb.append("IPv4 networks:\n");
+				for (byte[] prefix : d.getNetworks()) {
+					sb.append("    ");
+					sb.append(prefix[0] & 0xFF);
+					sb.append(".");
+					sb.append(prefix[1] & 0xFF);
+					sb.append(".");
+					sb.append(prefix[2] & 0xFF);
+					sb.append(".");
+					sb.append(prefix[3] & 0xFF);
+					sb.append("/");
+					sb.append(prefix[4] & 0xFF);
+					sb.append("\n");
+				}
+			}
+			if (!d.getMacList().isEmpty()) {
+				sb.append("MAC addresses:\n");
+				for (byte[] mac : d.getMacList()) {
+					sb.append("    ");
+					for (byte b : mac) {
+						sb.append(byteToHex(b));
+						if (b != mac[mac.length-1])
+							sb.append(":");
+					}
+					sb.append("\n");
+				}
+			}
+			if (!d.getSubDomains().isEmpty()) {
+				sb.append("Subdomains:\n");
+				for (Domain subdomain : d.getSubDomains()) {
+					sb.append("    ");
+					sb.append(subdomain);
+					sb.append(" (name not available)");
+					// TODO: Make domain name a property of the Domain so we can get a name from a domain object without
+					//	doing a brute force search on a hashmap
+					sb.append("\n");
+				}
+			}
+		}
+		return sb.toString();
+	}
+	
+	/**
+	 * Generates console output that describes the contents of all configured FlowRequests.
+	 * @return
+	 */
+	private String printFlowReqs() {
+		return "TODO: code me\n";
+	}
+	
+	/**
 	 * 
 	 * @param network IPv4 network prefix in CIDR notation
 	 * @return Byte array with 5 values denoting IPv4 address and network mask, or null if the string is malformed.
 	 */
 	private byte[] cidrToBytes(String network) {
-		return null;
+		// format should be "0.0.0.0/0" or "0.0.0.0"
+		String[] tokens = network.split("\\."); // need to escape "any character" character from regex
+		if (tokens.length != 4)
+			return null;
+		byte[] bytes = new byte[5];
+		bytes[0] = (byte) Integer.parseInt(tokens[0]);
+		bytes[1] = (byte) Integer.parseInt(tokens[1]);
+		bytes[2] = (byte) Integer.parseInt(tokens[2]);
+		tokens = tokens[3].split("/");
+		bytes[3] = (byte) Integer.parseInt(tokens[0]);
+		bytes[4] = (byte) 32;
+		if (tokens.length == 2)
+			bytes[4] = (byte) Integer.parseInt(tokens[1]);
+		return bytes;
+	}
+	
+	/**
+	 * 
+	 * @param mac 
+	 * @return
+	 */
+	private byte[] macToBytes(String mac) {
+		// format should be "00:00:01:23:45:67"
+		String[] tokens = mac.split(":");
+		if (tokens.length != 6)
+			return null;
+		byte[] bytes = new byte[6];
+		for (int i = 0; i < 6; i++) {
+			bytes[i] = Integer.decode("0x" + tokens[i]).byteValue(); // convert from hex string
+		}
+		return bytes;
+	}
+	
+	/*
+	 * This code from http://stackoverflow.com/questions/9655181/how-to-convert-a-byte-array-to-a-hex-string-in-java
+	 */
+	final protected static char[] hexArray = "0123456789abcdef".toCharArray(); // changed to lowercase - Wes
+//	public static String bytesToHex(byte[] bytes) {
+//	    char[] hexChars = new char[bytes.length * 2];
+//	    for ( int j = 0; j < bytes.length; j++ ) {
+//	        int v = bytes[j] & 0xFF;
+//	        hexChars[j * 2] = hexArray[v >>> 4];
+//	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+//	    }
+//	    return new String(hexChars);
+//	}
+	
+	// modified by Wes to do a single byte at a time
+	public static String byteToHex(byte b) {
+		char[] hexChars = new char[2];
+		int v = b & 0xFF;
+		hexChars[0] = hexArray[v >>> 4];
+		hexChars[1] = hexArray[v & 0x0F];
+		return new String(hexChars);
 	}
 }
