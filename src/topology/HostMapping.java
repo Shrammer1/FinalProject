@@ -1,9 +1,9 @@
 package topology;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
+
+import utils.NetworkUtils;
 
 public class HostMapping {
 	private MacMapping mac;
@@ -43,38 +43,11 @@ public class HostMapping {
 	public String toString(){
 		String ips = "";
 		for(IPMapping ip:this.ips){
-			ips = ips + intToIP(ip.getIP()) + " | ";
+			ips = ips + NetworkUtils.intToIP(ip.getIP()) + " | ";
 		}
-		return bytesToString(mac.getMacAddress()) + " : " + ips + "\n";
-	}
-	
-	
-	private String intToIP(int ip){
-	  byte[] addr = new byte[] {
-	    (byte)((ip >>> 24) & 0xff),
-	    (byte)((ip >>> 16) & 0xff),
-	    (byte)((ip >>>  8) & 0xff),
-	    (byte)((ip       ) & 0xff)};
-
-	  try {
-		return InetAddress.getByAddress(addr).getHostAddress();
-	  } catch (UnknownHostException e) {
-		e.printStackTrace();
-	  }
-	  return null;
+		return NetworkUtils.bytesToMac(mac.getMacAddress()) + " : " + ips + "\n";
 	}
 		
-		
-	//TODO: make this a public static class/method
-	private String bytesToString(byte[] mac){
-		StringBuilder sb = new StringBuilder(18);
-	    for (byte b : mac) {
-	        if (sb.length() > 0)
-	            sb.append(':');
-	        sb.append(String.format("%02x", b));
-	    }
-	    return sb.toString();
-	}
 	
 	public boolean update(HostMapping map){
 		this.mac.setMacAddress(map.getMac());

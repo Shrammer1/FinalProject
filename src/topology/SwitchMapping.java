@@ -54,17 +54,6 @@ public class SwitchMapping{
 		return true;
 	}
 	
-	//TODO: make this a public static class/method
-	@SuppressWarnings("unused")
-	private String bytesToString(byte[] mac){
-		StringBuilder sb = new StringBuilder(18);
-	    for (byte b : mac) {
-	        if (sb.length() > 0)
-	            sb.append(':');
-	        sb.append(String.format("%02x", b));
-	    }
-	    return sb.toString();
-	}
 	
 	public boolean updateHosts(ArrayList<HostMapping> hosts){
 		boolean flag = false;

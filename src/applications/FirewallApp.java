@@ -7,6 +7,7 @@ import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 
@@ -58,7 +59,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {
 //		this.controller = controller;
-		this.api = (AppAPI) controller.register(priority, this.toStub(this));
+		this.api = (AppAPI) controller.register(priority, RemoteObject.toStub(this));
 	}
 	
 	public void test() throws RemoteException {

@@ -1,7 +1,5 @@
 package topology;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -28,21 +26,6 @@ public class IPMapping {
 		this.ipaddr = ipaddr;
 	}
 	
-	@SuppressWarnings("unused")
-	private String intToIP(int ip){
-	  byte[] addr = new byte[] {
-	    (byte)((ip >>> 24) & 0xff),
-	    (byte)((ip >>> 16) & 0xff),
-	    (byte)((ip >>>  8) & 0xff),
-	    (byte)((ip       ) & 0xff)};
-
-	  try {
-		return InetAddress.getByAddress(addr).getHostAddress();
-	  } catch (UnknownHostException e) {
-		e.printStackTrace();
-	  }
-	  return null;
-	}
 	
 	public void startTimingOut(){
 		timingOut = true;

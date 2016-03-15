@@ -1,11 +1,10 @@
 package topology;
 
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 
 import controller.OFSwitch;
+import utils.NetworkUtils;
 
 public class HostTable extends ArrayList<SwitchMapping>{
 
@@ -84,40 +83,13 @@ public class HostTable extends ArrayList<SwitchMapping>{
 			for(HostMapping h:map.getHosts()){
 				String ips = "";
 				for(IPMapping ip: h.getIPs()){
-					ips = ips + intToIP(ip.getIP()) + " | ";
+					ips = ips + NetworkUtils.intToIP(ip.getIP()) + " | ";
 				}
 				//retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + Integer.toHexString(ByteBuffer.wrap(mac).getInt()) + "\n";
-				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + bytesToString(h.getMac()) + " : " + ips + "\n";
+				retval = retval + map.getSw().getSwitchFullName() + " : " + map.getPort() + " : " + NetworkUtils.bytesToMac(h.getMac()) + " : " + ips + "\n";
 			}
 		}
 		return retval;
-	}
-	
-	private String intToIP(int ip){
-	  byte[] addr = new byte[] {
-	    (byte)((ip >>> 24) & 0xff),
-	    (byte)((ip >>> 16) & 0xff),
-	    (byte)((ip >>>  8) & 0xff),
-	    (byte)((ip       ) & 0xff)};
-
-	  try {
-		return InetAddress.getByAddress(addr).getHostAddress();
-	  } catch (UnknownHostException e) {
-		e.printStackTrace();
-	  }
-	  return null;
-	}
-	
-	
-	//TODO: make this a public static class/method
-	private String bytesToString(byte[] mac){
-		StringBuilder sb = new StringBuilder(18);
-	    for (byte b : mac) {
-	        if (sb.length() > 0)
-	            sb.append(':');
-	        sb.append(String.format("%02x", b));
-	    }
-	    return sb.toString();
 	}
 	
 	

@@ -7,14 +7,13 @@ import java.util.ArrayList;
 import java.util.Queue;
 
 import org.openflow.protocol.OFType;
-import org.openflow.util.Unsigned;
-import api.CLIModule;
+
 import api.AppAPI;
+import api.CLIModule;
 import flowsolver.FlowRequest;
 
 public class Application extends UnicastRemoteObject implements AppAPI{
 	
-	//TODO: Apps must expire should their remoteApp no longer be available, figure out some way to clean them up
 	
 	private static final long serialVersionUID = 5697031628246495923L;
 

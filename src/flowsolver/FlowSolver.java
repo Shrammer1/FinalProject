@@ -49,7 +49,6 @@ public class FlowSolver {
 		return true;
 	}
 	
-	//TODO: finish this method
 	public boolean requestDelFlow(FlowRequest request, Application app){
 		ArrayList<FlowEntry> flowsToDelete = buildFlows(request, app.getPriority() + request.getPriority());
 		
@@ -509,7 +508,6 @@ public class FlowSolver {
 	}
 
 	public void updateFlows(HostMapping newHost) {
-		//TODO: this should find all switches that need to be updated for a new host, then send the updates
 		//Steps:
 		//Step 1: Find all switches that could be effected by the topology change
 		
