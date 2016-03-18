@@ -80,7 +80,7 @@ public class FlowSolverTester {
 		dst.setNetworks(networks);
 		TrafficClass tclass = new TrafficClass();
 		
-		FlowRequest fReq = new FlowRequest(src,dst,tclass , 3, FlowAction.DROP);
+		FlowRequest fReq = new FlowRequest("test",src,dst,tclass , 3, FlowAction.DROP);
 		
 		appIntf.requestAddFlow(fReq);
 		

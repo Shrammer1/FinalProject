@@ -10,9 +10,11 @@ public class FlowRequest implements Serializable{
 	private TrafficClass tClass;
 	private int priority;
 	private FlowAction fAction;
+	private String name;
 	
 	//***CONSTRUCTORS	
-	public FlowRequest(Domain src, Domain dst, TrafficClass tClass,int priority, FlowAction fAction) {
+	public FlowRequest(String name, Domain src, Domain dst, TrafficClass tClass,int priority, FlowAction fAction) {
+		this.name = name;
 		this.src = src;
 		this.dst = dst;
 		this.tClass = tClass;
@@ -20,7 +22,8 @@ public class FlowRequest implements Serializable{
 		this.fAction = fAction;
 	}
 	
-	public FlowRequest(Domain src, TrafficClass tClass, int priority,FlowAction fAction) {
+	public FlowRequest(String name, Domain src, TrafficClass tClass, int priority,FlowAction fAction) {
+		this.name = name;
 		this.src = src;
 		this.tClass = tClass;
 		this.priority = priority;
@@ -57,6 +60,12 @@ public class FlowRequest implements Serializable{
 	}
 	public void setFlowAction(FlowAction fAction) {
 		this.fAction = fAction;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
 	}
 	public static long getSerialversionuid() {
 		return serialVersionUID;

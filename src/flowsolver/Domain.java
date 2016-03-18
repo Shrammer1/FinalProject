@@ -12,6 +12,7 @@ public class Domain implements Serializable {
 	private ArrayList<Domain> subDomains = new ArrayList<Domain>();
 	private ArrayList<byte[]> networks = new ArrayList<byte[]>();
 	private ArrayList<byte[]> macList = new ArrayList<byte[]>();
+	private String name = "";
 	
 	//***CONSTRUCTORS***
 	public Domain(ArrayList<Domain> subDomains, ArrayList<byte[]> networks, ArrayList<byte[]> macList) {
@@ -20,12 +21,21 @@ public class Domain implements Serializable {
 		this.macList = macList;
 	}
 	
+	public Domain(String name, ArrayList<Domain> subDomains, ArrayList<byte[]> networks, ArrayList<byte[]> macList) {
+		this.name = name;
+		this.subDomains = subDomains;
+		this.networks = networks;
+		this.macList = macList;
+	}
 	
 	public Domain(ArrayList<Domain> subDomains) {
 		this.subDomains = subDomains;
 	}
 
-
+	public Domain(String name) {
+		this.name = name;
+	}
+	
 	public Domain() {
 		
 	}
@@ -50,6 +60,14 @@ public class Domain implements Serializable {
 	public void setMacList(ArrayList<byte[]> macList) {
 		this.macList = macList;
 	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+
+
 	public static long getSerialversionuid() {
 		return serialVersionUID;
 	}

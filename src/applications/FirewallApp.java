@@ -9,6 +9,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import api.AppAPI;
@@ -46,7 +47,10 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	 * @throws NotBoundException
 	 */
 	public static void main(String[] args) throws MalformedURLException, RemoteException, NotBoundException {
-		// TODO verification of command-line arguments
+		if (args.length != 2) {
+			System.out.println("Usage: FirewallApp <controller_ipv4_addr:port> <priority>");
+			return;
+		}
 		String connectTo = args[0];
 		int priority = Integer.parseInt(args[1]);
 		
@@ -64,17 +68,18 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public void test() throws RemoteException {
 		// define two domains A and B
-		Domain domA = new Domain();
-		Domain domB = new Domain();
+		Domain domA = new Domain("TestDomain1");
+		Domain domB = new Domain("TestDomain2");
 		
 		domA.getNetworks().add(new byte[] {(byte) 192,(byte) 168,10,0,24}); // domA = 192.168.10.0/24
 		domB.getNetworks().add(new byte[] {(byte) 192,(byte) 168,20,0,24}); // domA = 192.168.20.0/24
 		
-		domains.put("TestDomain1", domA);
-		domains.put("TestDomain2", domB);
+		domains.put(domA.getName(), domA);
+		domains.put(domB.getName(), domB);
 		
 		// push a flow request that blocks all traffic from A to B
-		FlowRequest req = new FlowRequest(domA, domB, new TrafficClass(), 0, FlowAction.DROP);
+		FlowRequest req = new FlowRequest("testPolicy", domA, domB, new TrafficClass(), 0, FlowAction.DROP);
+		flowReqs.put(req.getName(), req);
 		api.requestAddFlow(req);
 	}
 	
@@ -84,7 +89,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		 */
 		try {
 			String appName = getApplicationContextName();
-			System.out.print("cli/" + appName + "> ");
+			System.out.print(appName + "> ");
 			while (true) {
 				BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 				String input = "";
@@ -134,51 +139,78 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				}
 				break;
 			case "delete":
-				// TODO: Implement deleting domains and policies
+				switch (args[1]) {
+				case "domain": // delete domain <name>
+					String domainName = args[2];
+					// make sure the domain is not in use before deleting it
+					for (FlowRequest req : flowReqs.values()) {
+						if (req.getSrc().getName().equals(domainName) ||
+								req.getDst().getName().equals(domainName)) {
+							return "Error: domain in use by policy \"" + req.getName() + "\"";
+						}
+					}
+					domains.remove(domainName);
+					return "";
+				case "policy": // delete policy <name>
+					String flowReqName = args[2];
+					FlowRequest request = flowReqs.get(flowReqName);
+					api.requestDelFlow(request); // when a flow request is deleted, we need to inform the controller
+					flowReqs.remove(flowReqName);
+					break;
+				}
 				break;
 			case "domain": // domain <name> ...
+			{
 				if (args.length < 5)
 					break; // require a useful command after the name
 				String name = args[1];
 				Domain dom = domains.get(name);
 				if (dom == null) {
 					// Create the domain if not already present.
-					dom = new Domain();
+					dom = new Domain(name);
 					domains.put(name, dom);
 				}
 				switch (args[2]) {
 				case "add":
 					switch (args[3]) {
-					case "ip": // domain X add ip <list>
+					case "ip": // domain <name> add ip <list>
 						for (int i = 4; i < args.length; i++) {							
 							// Parse the ip network argument, which is in CIDR notation with an optional mask.
 							// If the mask is not present, assume the mask is /32. 
 							byte[] prefix = cidrToBytes(args[i]);
-							
-							// TODO don't add the prefix if we already contain it
-							// have to iterate the networks array and run Arrays.equals() on each element
-							
 							if (prefix == null) {
 								return "Bad IPv4 prefix: " + args[i];
 							}
+							// Don't add the prefix if we already contain it
+							// have to iterate the networks array and run Arrays.equals() on each element
+							for (byte[] existingPrefix : dom.getNetworks()) {
+								if (Arrays.equals(existingPrefix, prefix)) {
+									return ""; // it's a duplicate, do nothing and report no error
+								}
+							}
+							
 							dom.getNetworks().add(prefix);
 						}
 						return "";
-					case "mac": // domain X add mac <list>
+					case "mac": // domain <name> add mac <list>
 						for (int i = 4; i < args.length; i++) {
 							// format should be "00:00:01:23:45:67"
 							byte[] mac = macToBytes(args[i]);
-							
-							// TODO don't add the mac if we already contain it
-							// have to iterate the networks array and run Arrays.equals() on each element
-							
 							if (mac == null) {
 								return "Bad MAC address: " + args[i];
 							}
+							// Don't add the mac if we already contain it
+							// have to iterate the mac array and run Arrays.equals() on each element
+							for (byte[] existingMac : dom.getMacList()) {
+								if (Arrays.equals(existingMac, mac)) {
+									return ""; // it's a duplicate, do nothing and report no error
+								}
+							}
+							
 							dom.getMacList().add(mac);
 						}
 						return "";
-					case "domain": // domain X add domain <list>
+					case "domain": // domain <name> add domain <list>
 						for (int i = 4; i < args.length; i++) {
 							// Search for the domain given by name and make sure it exists 
 							String domainName = args[i];
@@ -193,9 +225,78 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 					break;
 				}
 				break;
-			case "policy":
-				// TODO: Implement adding policies
-				break;
+			}
+			case "policy": // policy <name> ...
+			{
+				if (args.length < 8) 
+					break; // require minimum set of parameters (to/from, and action)
+				
+				String policyName = args[1];
+				Domain src = null, dst = null;
+				TrafficClass tClass = new TrafficClass();
+				int priority = 0;
+				FlowAction action = FlowAction.DROP;
+				
+				// these flags track whether the required syntax for the the command has been met
+				//	That is, policy must specify an action and at least one domain.
+				boolean hasDomain = false;
+				boolean hasAction = false;
+				boolean hasPriority = false;
+				
+				for (int i = 2; i < args.length; i++) { // interpret the rest of the parameters
+					switch (args[i]) {
+					case "from":
+						hasDomain = true;
+						src = domains.get(args[++i]);
+						if (src == null)
+							return "Error: source domain does not exist";
+						break;
+					case "to":
+						hasDomain = true;
+						dst = domains.get(args[++i]);
+						if (dst == null)
+							return "Error: destination domain does not exist";
+						break;
+					case "srcport":
+						tClass.setSrcPort(Short.parseShort(args[++i]));
+						break;
+					case "dstport":
+						tClass.setDstPort(Short.parseShort(args[++i]));
+						break;
+					case "priority":
+						hasPriority = true;
+						priority = Integer.parseInt(args[++i]);
+						break;
+					case "action":
+						hasAction = true;
+						switch (args[++i]) {
+						case "drop":
+							action = FlowAction.DROP;
+							break;
+						case "allow":
+							action = FlowAction.ALLOW;
+							break;
+						}
+						break;
+					}
+				}
+				if (!hasDomain || !hasAction || !hasPriority) {
+					return "Error: required parameters missing.\nUsage: policy <name> <from <domain-name> | to <domain-name>> [srcport <srcport>] [dstport <dstport>] priority <priority> action <action>";
+				}
+				
+				// if the policy already exists, we first delete the existing policy in order to overwrite it
+				if (flowReqs.containsKey(policyName)) {
+					api.requestDelFlow(flowReqs.get(policyName));
+					flowReqs.remove(policyName);
+				}
+				
+				// install the new policy
+				FlowRequest policy = new FlowRequest(policyName, src, dst, tClass, priority, action);
+				api.requestAddFlow(policy);
+				flowReqs.put(policyName, policy);
+				
+				return "";
+			}
 			default:
 			}
 		}
@@ -213,7 +314,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		StringBuilder sb = new StringBuilder();
 		for (String name : domains.keySet()) {
 			Domain d = domains.get(name);
-			sb.append("\nDomain name: ").append(name).append("\n");
+			sb.append("\nDomain: ").append(name).append("\n");
 			sb.append("----------------------------------------\n");
 			if (!d.getNetworks().isEmpty()) {
 				sb.append("IPv4 networks:\n");
@@ -247,10 +348,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				sb.append("Subdomains:\n");
 				for (Domain subdomain : d.getSubDomains()) {
 					sb.append("    ");
-					sb.append(subdomain);
-					sb.append(" (name not available)");
-					// TODO: Make domain name a property of the Domain so we can get a name from a domain object without
-					//	doing a brute force search on a hashmap
+					sb.append(subdomain.getName());
 					sb.append("\n");
 				}
 			}
@@ -263,7 +361,40 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	 * @return
 	 */
 	private String printFlowReqs() {
-		return "TODO: code me\n";
+		StringBuilder sb =  new StringBuilder();
+		for (String name : flowReqs.keySet()) {
+			FlowRequest req = flowReqs.get(name);
+			sb.append("\nPolicy: " ).append(name).append("\n");
+			sb.append("----------------------------------------\n");
+			sb.append("Priority ").append(req.getPriority()).append("\n");
+			sb.append("  From: ").append(req.getSrc() != null ? req.getSrc().getName() : "").append("\n");
+			sb.append("    To: ").append(req.getDst() != null ? req.getDst().getName() : "").append("\n");
+			
+			sb.append(" Class: ");
+			TrafficClass tc = req.getTrafficClass();
+			StringBuilder classField = new StringBuilder();
+			short srcPort = tc.getSrcPort();
+			short dstPort = tc.getDstPort();
+			if (srcPort > 0) classField.append("srcPort(").append(srcPort).append(") ");
+			if (dstPort > 0) classField.append("dstPort(").append(dstPort).append(") ");
+			if (classField.length() == 0) classField.append("Any");
+			sb.append(classField);
+			sb.append("\n");
+			
+			sb.append("Action: ");
+			switch (req.getFlowAction()) {
+			case ALLOW:
+				sb.append("Allow");
+				break;
+			case DROP:
+				sb.append("Drop");
+				break;
+			default:
+				break;
+			}
+			sb.append("\n");
+		}
+		return sb.toString();
 	}
 	
 	/**
