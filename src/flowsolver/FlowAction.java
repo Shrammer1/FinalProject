@@ -1,6 +1,5 @@
 package flowsolver;
 
 public enum FlowAction {
-	ALLOW, DROP
-
+	ALLOW, DROP, INSPECT
 }

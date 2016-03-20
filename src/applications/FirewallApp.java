@@ -257,6 +257,12 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 						if (dst == null)
 							return "Error: destination domain does not exist";
 						break;
+					case "udp":
+						tClass.setPortType(TrafficClass.PORTTYPE_UDP);
+						break;
+					case "tcp":
+						tClass.setPortType(TrafficClass.PORTTYPE_TCP);
+						break;
 					case "srcport":
 						tClass.setSrcPort(Short.parseShort(args[++i]));
 						break;
@@ -281,7 +287,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 					}
 				}
 				if (!hasDomain || !hasAction || !hasPriority) {
-					return "Error: required parameters missing.\nUsage: policy <name> <from <domain-name> | to <domain-name>> [srcport <srcport>] [dstport <dstport>] priority <priority> action <action>";
+					return "Error: required parameters missing.\nUsage: policy <name> <from <domain-name> | to <domain-name>> [[udp|tcp] [srcport <srcport>] [dstport <dstport>]] priority <priority> action <action>";
 				}
 				
 				// if the policy already exists, we first delete the existing policy in order to overwrite it
@@ -370,15 +376,36 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 			sb.append("  From: ").append(req.getSrc() != null ? req.getSrc().getName() : "").append("\n");
 			sb.append("    To: ").append(req.getDst() != null ? req.getDst().getName() : "").append("\n");
 			
-			sb.append(" Class: ");
+			sb.append(" Class: \n");
+			
 			TrafficClass tc = req.getTrafficClass();
-			StringBuilder classField = new StringBuilder();
+			byte protocol = tc.getPortType();
 			short srcPort = tc.getSrcPort();
 			short dstPort = tc.getDstPort();
-			if (srcPort > 0) classField.append("srcPort(").append(srcPort).append(") ");
-			if (dstPort > 0) classField.append("dstPort(").append(dstPort).append(") ");
-			if (classField.length() == 0) classField.append("Any");
-			sb.append(classField);
+			
+			// print protocol
+			switch (protocol) {
+			case TrafficClass.PORTTYPE_ANY:
+				sb.append("  Protocol - IP: any protocol");
+				break;
+			case TrafficClass.PORTTYPE_TCP:
+				sb.append("  Protocol - TCP:");
+				break;
+			case TrafficClass.PORTTYPE_UDP:
+				sb.append("  Protocol - UCP:");
+				break;
+			default:
+				// I don't know this protocol number
+				break;
+			}
+			
+			// print ports
+			if (protocol == TrafficClass.PORTTYPE_TCP || protocol == TrafficClass.PORTTYPE_UDP) {
+				sb.append(" srcport ").append((srcPort > 0) ? srcPort : "ANY");
+				sb.append(" dstport ").append((dstPort > 0) ? dstPort : "ANY");
+			}
+			
+			// done with protocols
 			sb.append("\n");
 			
 			sb.append("Action: ");
@@ -388,6 +415,9 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				break;
 			case DROP:
 				sb.append("Drop");
+				break;
+			case INSPECT:
+				sb.append("Inspect");
 				break;
 			default:
 				break;

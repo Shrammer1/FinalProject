@@ -4,6 +4,10 @@ import java.io.Serializable;
 
 public class TrafficClass implements Serializable{
 
+	public static final byte PORTTYPE_ANY = 0; // indicates ports are ignored when classifying the traffic
+	public static final byte PORTTYPE_TCP = 6;
+	public static final byte PORTTYPE_UDP = 17;
+	
 	private static final long serialVersionUID = -7272204048173591835L;
 	private short srcPort;
 	private short dstPort;
@@ -15,7 +19,7 @@ public class TrafficClass implements Serializable{
 	public TrafficClass(){
 		this.srcPort=0;
 		this.dstPort=0;
-		this.portType=0;
+		this.portType=PORTTYPE_ANY;
 	}
 	
 	//***CONSTRUCTORS
@@ -85,7 +89,4 @@ public class TrafficClass implements Serializable{
 			return false;
 		return true;
 	}
-	
-	
-	
 }
