@@ -38,7 +38,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	private HashMap<String, FlowRequest> flowReqs = new HashMap<String, FlowRequest>(); // tracks all configured flow requests
 	
 	/**
-	 * This application is to be invoked with the arguments: <controllerip:port> <priority>
+	 * This application is to be invoked with the arguments: <controllerip:port/ControllerName> <priority>
 	 * For example: java applications FirewallApp 127.0.0.1:1099 100
 	 * 
 	 * @param args
@@ -54,11 +54,11 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		String connectTo = args[0];
 		int priority = Integer.parseInt(args[1]);
 		
-		ControllerAPI controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + connectTo + "/controller");
+		ControllerAPI controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + connectTo);
 		FirewallApp firewall = new FirewallApp(controllerIntf, priority);
 		
-		firewall.test();
-		firewall.testCLI();
+		//firewall.test();
+		//firewall.testCLI();
 	}
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {

@@ -108,6 +108,7 @@ public class TopologyMapper implements Runnable{
 	}
 	
 	public synchronized HostMapping learn(byte[] macAddr, int ipAddr, int inPort, OFSwitch sw){
+		//System.out.println(hosts.toString());
 		SwitchMapping mapping = new SwitchMapping(inPort,sw,macAddr,ipAddr, 60);
 		if(!(macTable.contains(mapping))){
 			macTable.add(mapping);
