@@ -159,7 +159,6 @@ public class SwitchHandler implements Runnable {
 	@Override
 	public void run(){
 		while(!(t.isInterrupted())){
-			//TODO: USE TIMER TO CLEAN UP SWITCHES!!!!!!
 			try {
 				Thread.sleep(1000);
 				Iterator<OFSwitch> i = controller.getSwitches().iterator();

@@ -39,7 +39,6 @@ public class StreamHandler implements Runnable{
 		this.sw=sw;
 	}
 	
-	//TODO: properly handle these IO exceptions for when the stream gets cut
 	//Method to send a single OFMessage
 	protected synchronized void sendMsg(OFMessage msg) throws IOException {
 		synchronized (stream) 
