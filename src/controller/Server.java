@@ -6,7 +6,7 @@ public class Server {
 
 	/*
 	 * Main method to be used on CLI with additional arguments for extra
-	 * functionality. L2 behavior argument option written by Wesley Cooper.
+	 * functionality.
 	 */
 	public static void main(String args[]){
 		boolean l2_learning=false;
