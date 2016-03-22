@@ -30,55 +30,6 @@ public class Server {
 		controller.start();
 		
 		
-		/*
-		//this is going to have to be changed before the final version to incorporate all options
-		if(args.length==2){
-			if(args[1].equals("-l2")){
-				l2_learning = true;
-			}
-			else{
-				System.err.println(printUsage());
-				System.exit(1); //0=OK; 1=ERROR; -1=EXCEPTION
-			}
-		}
-		*/
-		
-		//TEST CODE HERE ****************************************************************************************
-		/*
-		Domain src = new Domain();
-		ArrayList<byte[]> networks = new ArrayList<byte[]>();
-		ByteBuffer n = ByteBuffer.allocate(4);
-		n.put((byte) 172);
-		n.put((byte) 16);
-		n.put((byte) 1);
-		n.put((byte) 101);
-		networks.add(n.array());
-		src.setNetworks(networks);
-		
-		networks = new ArrayList<byte[]>();
-		n = ByteBuffer.allocate(4);
-		n.put((byte) 172);
-		n.put((byte) 16);
-		n.put((byte) 1);
-		n.put((byte) 2);
-		networks.add(n.array());
-		Domain dst = new Domain();
-		dst.setNetworks(networks);
-		TrafficClass tclass = new TrafficClass();
-		
-		FlowRequest fReq = new FlowRequest(src,dst,tclass , 1, FlowAction.ALLOW);
-		
-		Application app = null;
-		try {
-			app = new Application(100, controller);
-		} catch (RemoteException e) {
-			e.printStackTrace();
-		}
-		
-		controller.getFlowSolver().requestAddFlow(fReq, app);
-		*/
-		//END OF TEST CODE **************************************************************************************
-		
 	}
 	
 	/**************************************************
@@ -104,6 +55,6 @@ public class Server {
 	
 	
 	private static String printUsage(){
-		return "Usage: THISFILENAME <Server_Name>\nOptions:\n\n-l2\tBuilt in standard layer 2 learning";
+		return "Usage: THISFILENAME <Server_Name>\n";
 	}
 }
