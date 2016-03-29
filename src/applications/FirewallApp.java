@@ -154,9 +154,10 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				case "policy": // delete policy <name>
 					String flowReqName = args[2];
 					FlowRequest request = flowReqs.get(flowReqName);
+					if(request==null) return "No policy named: " + args[2];
 					api.requestDelFlow(request); // when a flow request is deleted, we need to inform the controller
 					flowReqs.remove(flowReqName);
-					break;
+					return "";
 				}
 				break;
 			case "domain": // domain <name> ...
