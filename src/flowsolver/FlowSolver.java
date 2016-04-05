@@ -152,6 +152,7 @@ public class FlowSolver {
 			for(FlowEntry entry:flows){
 				OFMatch match = entry.getFlowMod().getMatch();
 				match.setDataLayerType((short) 0x0800);
+				match.setNetworkProtocol(portType);
 				if(srcPortNum!=0){
 					match.setTransportSource(portType, srcPortNum);
 				}
