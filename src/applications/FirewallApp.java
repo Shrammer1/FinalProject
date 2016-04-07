@@ -53,9 +53,12 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		}
 		String connectTo = args[0];
 		int priority = Integer.parseInt(args[1]);
-		
+		System.out.println("Firewall started. Attempting to connect to controller...");
 		ControllerAPI controllerIntf = (ControllerAPI) Naming.lookup("rmi://" + connectTo);
+		@SuppressWarnings("unused")
 		FirewallApp firewall = new FirewallApp(controllerIntf, priority);
+		System.out.println("Connected to controller.");
+		
 		
 		//firewall.test();
 		//firewall.testCLI();
@@ -119,13 +122,15 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	@Override
 	public String getApplicationContextName() throws RemoteException {
-		return "firewall";
+		return "Firewall";
 	}
 
 	@Override
 	public String executeCommand(String command) throws RemoteException {
 		if (command == null || command.trim().length() == 0)
 			return ""; // we all love to mash the enter key
+		
+		System.out.println("Received Command: " + command + " - attempting to execute...");
 		
 		try {
 			String[] args = command.split(" ");
