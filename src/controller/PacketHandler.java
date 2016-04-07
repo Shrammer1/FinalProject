@@ -128,10 +128,13 @@ public class PacketHandler implements Runnable{
         if ((dlDst[0] & 0x1) == 0) {
             outPort = macTable.get(dlDstKey);
         }
-
+        
+        boolean foundPort = false;
+        
         //STEP_3_A: If the output port is known, create and push a FlowMod
         //if (outPort != null && pktIn.getDataLayerType() == (short) 0x0800) {
         if (outPort != null) {
+        	foundPort = true;
             //Retrieves an OFMessage instance corresponding to the specified OFType
         	OFFlowMod fm = (OFFlowMod) factory.getMessage(OFType.FLOW_MOD);
             fm.setCommand(OFFlowMod.OFPFC_ADD);
@@ -201,6 +204,12 @@ public class PacketHandler implements Runnable{
                 po.setLength(U16.t(OFPacketOut.MINIMUM_LENGTH+ po.getActionsLength()));
             }
             sw.sendMsg(po);
+            if(!foundPort){
+            	sw.getController().getTopologyMapper().ageIP(pktIn.getNetworkSource(), sw);
+            }
+        }
+        else{
+        	sw.getController().getTopologyMapper().ageIP(pktIn.getNetworkSource(), sw);
         }
         
 	}
