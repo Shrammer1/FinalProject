@@ -34,7 +34,7 @@ public class TopologyMapper implements Runnable{
 			try {
 				Thread.sleep(1000);
 				
-				System.out.println(hosts.toString());
+				//System.out.println(hosts.toString());
 				
 				hosts.cleanDead();
 				links.cleanDead();
