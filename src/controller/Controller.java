@@ -208,15 +208,17 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 	}
 
 	
-	public Object register(int priority, Remote remoteApp) throws RemoteException {
+	public Object register(int priority, String name, Remote remoteApp) throws RemoteException {
 		Application newApp = new Application(priority,this,remoteApp);
+		newApp.setApplicationName(name);
 		apps.add(newApp);
 		return newApp;
 	}
 	
 	@Override
-	public Object register(int priority) throws RemoteException {
+	public Object register(int priority, String name) throws RemoteException {
 		Application newApp = new Application(priority,this);
+		newApp.setApplicationName(name);
 		apps.add(newApp);
 		return newApp;
 	}

@@ -66,7 +66,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {
 //		this.controller = controller;
-		this.api = (AppAPI) controller.register(priority, RemoteObject.toStub(this));
+		this.api = (AppAPI) controller.register(priority, "Firewall", RemoteObject.toStub(this));
 	}
 	
 	public void test() throws RemoteException {
