@@ -210,7 +210,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							retVal += "\n" + args[i];
 						}
 						System.out.println("Added IP(s): " + retVal + "\nto domain: " + name);
-						return "Added IP(s): " + retVal + "to domain: " + name;
+						return "Added IP(s): " + retVal + "\nto domain: " + name;
 					case "mac": // domain <name> add mac <list>
 						for (int i = 4; i < args.length; i++) {
 							// format should be "00:00:01:23:45:67"
@@ -232,7 +232,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							dom.getMacList().add(mac);
 						}
 						System.out.println("Added MAC(s): " + retVal + "\nto domain: " + name);
-						return "Added MAC(s): " + retVal + "to domain: " + name;
+						return "Added MAC(s): " + retVal + "\nto domain: " + name;
 						
 					case "domain": // domain <name> add domain <list>
 						for (int i = 4; i < args.length; i++) {
@@ -248,7 +248,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 								retVal += "\n" + domainName;
 							}
 						}						
-						System.out.println("Added sub-domain(s): " + retVal + "to domain: " + name);
+						System.out.println("Added sub-domain(s): " + retVal + "\nto domain: " + name);
 						return "Added sub-domain(s): " + retVal + "\nto domain: " + name;
 						
 					}
