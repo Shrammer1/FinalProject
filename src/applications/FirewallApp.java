@@ -138,8 +138,10 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 			case "show":
 				switch (args[1]) {
 				case "domain-list":
+					System.out.println("Printing domain-list to CLI.");
 					return printDomains();
 				case "policy-list":
+					System.out.println("Printing policy-list to CLI.");
 					return printFlowReqs();
 				}
 				break;
@@ -151,18 +153,24 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 					for (FlowRequest req : flowReqs.values()) {
 						if (req.getSrc().getName().equals(domainName) ||
 								req.getDst().getName().equals(domainName)) {
-							return "Error: domain in use by policy \"" + req.getName() + "\"";
+							System.out.println("Unable to execute command, Domain in use by policy \"" + req.getName() + "\"");
+							return "Error: Domain in use by policy \"" + req.getName() + "\"";
 						}
 					}
 					domains.remove(domainName);
-					return "";
+					System.out.println("Domain: " + domainName + " deleted.");
+					return "Domain: " + domainName + " deleted.";
 				case "policy": // delete policy <name>
 					String flowReqName = args[2];
 					FlowRequest request = flowReqs.get(flowReqName);
-					if(request==null) return "No policy named: " + args[2];
+					if(request==null){
+						System.out.println("Unable to execute command, No policy named: " + args[2]);
+						return "No policy named: " + args[2];
+					}
 					api.requestDelFlow(request); // when a flow request is deleted, we need to inform the controller
 					flowReqs.remove(flowReqName);
-					return "";
+					System.out.println("Policy: " + flowReqName + " deleted.");
+					return "Policy: " + flowReqName + " deleted.";
 				}
 				break;
 			case "domain": // domain <name> ...
@@ -178,6 +186,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				}
 				switch (args[2]) {
 				case "add":
+					String retVal ="";
 					switch (args[3]) {
 					case "ip": // domain <name> add ip <list>
 						for (int i = 4; i < args.length; i++) {							
@@ -185,48 +194,63 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							// If the mask is not present, assume the mask is /32. 
 							byte[] prefix = cidrToBytes(args[i]);
 							if (prefix == null) {
+								System.out.println("Unable to execute command, Bad IPv4 prefix: " + args[i]);
 								return "Bad IPv4 prefix: " + args[i];
 							}
 							// Don't add the prefix if we already contain it
 							// have to iterate the networks array and run Arrays.equals() on each element
 							for (byte[] existingPrefix : dom.getNetworks()) {
 								if (Arrays.equals(existingPrefix, prefix)) {
-									return ""; // it's a duplicate, do nothing and report no error
+									System.out.println("Unable to execute command, Duplicate IP in domain: " + name);
+									return "Duplicate IP in domain: " + name; // it's a duplicate, do nothing and report no error
 								}
 							}
 							
 							dom.getNetworks().add(prefix);
+							retVal += prefix + "\n";
 						}
-						return "";
+						System.out.println("Added IP(s): " + retVal + "to domain: " + name);
+						return "Added IP(s): " + retVal + "to domain: " + name;
 					case "mac": // domain <name> add mac <list>
 						for (int i = 4; i < args.length; i++) {
 							// format should be "00:00:01:23:45:67"
 							byte[] mac = macToBytes(args[i]);
 							if (mac == null) {
+								System.out.println("Unable to execute command, Bad MAC address: " + args[i]);
 								return "Bad MAC address: " + args[i];
 							}
 							// Don't add the mac if we already contain it
 							// have to iterate the mac array and run Arrays.equals() on each element
 							for (byte[] existingMac : dom.getMacList()) {
 								if (Arrays.equals(existingMac, mac)) {
-									return ""; // it's a duplicate, do nothing and report no error
+									// it's a duplicate, do nothing and report no error
+									System.out.println("Unable to execute command, Duplicate MAC in domain: " + name);
+									return "Duplicate MAC in domain: " + name; // it's a duplicate, do nothing and report no error
 								}
 							}
-							
+							retVal += mac + "\n";
 							dom.getMacList().add(mac);
 						}
-						return "";
+						System.out.println("Added MAC(s): " + retVal + "to domain: " + name);
+						return "Added MAC(s): " + retVal + "to domain: " + name;
+						
 					case "domain": // domain <name> add domain <list>
 						for (int i = 4; i < args.length; i++) {
 							// Search for the domain given by name and make sure it exists 
 							String domainName = args[i];
 							Domain subDomain = domains.get(domainName);
-							if (subDomain == null)
+							if (subDomain == null){
+								System.out.println("Unable to execute command, Domain does not exist: " + args[i]);
 								return "Domain does not exist: " + args[i];
-							else
+							}
+							else{
 								dom.getSubDomains().add(domains.get(domainName));
-						}
-						return "";
+								retVal += domainName + "\n";
+							}
+						}						
+						System.out.println("Added sub-domain(s): " + retVal + "to domain: " + name);
+						return "Added sub-domain(s): " + retVal + "to domain: " + name;
+						
 					}
 					break;
 				}
@@ -254,14 +278,18 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 					case "from":
 						hasDomain = true;
 						src = domains.get(args[++i]);
-						if (src == null)
+						if (src == null){
+							System.out.println("Unable to execute command: source domain does not exist.");
 							return "Error: source domain does not exist";
+						}
 						break;
 					case "to":
 						hasDomain = true;
 						dst = domains.get(args[++i]);
-						if (dst == null)
+						if (dst == null){
+							System.out.println("Unable to execute command: destination domain does not exist.");
 							return "Error: destination domain does not exist";
+						}
 						break;
 					case "udp":
 						tClass.setPortType(TrafficClass.PORTTYPE_UDP);
@@ -307,7 +335,8 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 				api.requestAddFlow(policy);
 				flowReqs.put(policyName, policy);
 				
-				return "";
+				System.out.println("Policy: " + policyName + " added.");
+				return "Policy added.";
 			}
 			default:
 			}
@@ -315,6 +344,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 		catch (ArrayIndexOutOfBoundsException ex) {
 			// someone fed me garbage
 		}
+		System.out.println("Unable to execute, Unrecognized command: " + command);
 		return "Unrecognized command: " + command;
 	}
 	
