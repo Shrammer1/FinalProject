@@ -207,7 +207,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							}
 							
 							dom.getNetworks().add(prefix);
-							retVal += prefix + "\n";
+							retVal += args[i] + "\n";
 						}
 						System.out.println("Added IP(s): " + retVal + "to domain: " + name);
 						return "Added IP(s): " + retVal + "to domain: " + name;
@@ -228,7 +228,7 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 									return "Duplicate MAC in domain: " + name; // it's a duplicate, do nothing and report no error
 								}
 							}
-							retVal += mac + "\n";
+							retVal += args[i] + "\n";
 							dom.getMacList().add(mac);
 						}
 						System.out.println("Added MAC(s): " + retVal + "to domain: " + name);
