@@ -6,6 +6,7 @@ import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.server.RemoteObject;
 import java.rmi.server.UnicastRemoteObject;
@@ -29,9 +30,8 @@ import flowsolver.TrafficClass;
  * @author Wes
  *
  */
-public class FirewallApp extends UnicastRemoteObject implements CLIModule {
+public class FirewallApp implements CLIModule {
 
-	private static final long serialVersionUID = 3038609942924199599L;
 //	private ControllerAPI controller;
 	private AppAPI api;
 	private HashMap<String, Domain> domains = new HashMap<String, Domain>(); // tracks all configured domains, each with a name
@@ -66,7 +66,9 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 	
 	public FirewallApp(ControllerAPI controller, int priority) throws RemoteException {
 //		this.controller = controller;
-		this.api = (AppAPI) controller.register(priority, "Firewall", RemoteObject.toStub(this));
+		//this.api = (AppAPI) controller.register(priority, "Firewall", RemoteObject.toStub(this));
+		this.api = (AppAPI) controller.register(priority, "Firewall",(Remote) UnicastRemoteObject.exportObject(this, 0));
+		
 	}
 	
 	public void test() throws RemoteException {
