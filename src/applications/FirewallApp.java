@@ -207,9 +207,9 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							}
 							
 							dom.getNetworks().add(prefix);
-							retVal += "\n" + args[i] + "\n";
+							retVal += "\n" + args[i];
 						}
-						System.out.println("Added IP(s): " + retVal + "to domain: " + name);
+						System.out.println("Added IP(s): " + retVal + "\nto domain: " + name);
 						return "Added IP(s): " + retVal + "to domain: " + name;
 					case "mac": // domain <name> add mac <list>
 						for (int i = 4; i < args.length; i++) {
@@ -228,10 +228,10 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 									return "Duplicate MAC in domain: " + name; // it's a duplicate, do nothing and report no error
 								}
 							}
-							retVal += "\n" + args[i] + "\n";
+							retVal += "\n" + args[i];
 							dom.getMacList().add(mac);
 						}
-						System.out.println("Added MAC(s): " + retVal + "to domain: " + name);
+						System.out.println("Added MAC(s): " + retVal + "\nto domain: " + name);
 						return "Added MAC(s): " + retVal + "to domain: " + name;
 						
 					case "domain": // domain <name> add domain <list>
@@ -245,11 +245,11 @@ public class FirewallApp extends UnicastRemoteObject implements CLIModule {
 							}
 							else{
 								dom.getSubDomains().add(domains.get(domainName));
-								retVal += "\n" + domainName + "\n";
+								retVal += "\n" + domainName;
 							}
 						}						
 						System.out.println("Added sub-domain(s): " + retVal + "to domain: " + name);
-						return "Added sub-domain(s): " + retVal + "to domain: " + name;
+						return "Added sub-domain(s): " + retVal + "\nto domain: " + name;
 						
 					}
 					break;
