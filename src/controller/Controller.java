@@ -212,6 +212,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		Application newApp = new Application(priority,this,remoteApp);
 		newApp.setApplicationName(name);
 		apps.add(newApp);
+		LOGGER.log(Level.INFO, "Application: \'" + name + "\' has connected.");
 		return newApp;
 	}
 	
@@ -220,6 +221,7 @@ public class Controller extends UnicastRemoteObject implements Runnable, Control
 		Application newApp = new Application(priority,this);
 		newApp.setApplicationName(name);
 		apps.add(newApp);
+		LOGGER.log(Level.INFO, "Application: \'" + name + "\' has connected.");
 		return newApp;
 	}
 	
