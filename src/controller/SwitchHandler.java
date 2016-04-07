@@ -167,7 +167,7 @@ public class SwitchHandler implements Runnable {
 					if(!(sw.isAlive())){
 						if(sw.hasTimmedOut()){
 							i.remove();
-							LOGGER.log(Level.INFO, "Switch: " + sw.getSwitchFullName() + " has timmed out");
+							LOGGER.log(Level.INFO, "Switch: " + sw.getSwitchFullName() + " has timed out");
 						}
 					}
 				}
