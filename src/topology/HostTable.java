@@ -115,7 +115,7 @@ public class HostTable extends ArrayList<SwitchMapping>{
 		}
 	}
 	
-	public void ageIPMapping(int ip, OFSwitch ofSwitch){
+	public synchronized void ageIPMapping(int ip, OFSwitch ofSwitch){
 		for(SwitchMapping swMap:this){
 			if(swMap.getSw().equals(ofSwitch)){
 				for(HostMapping hostMap:swMap.getHosts()){
