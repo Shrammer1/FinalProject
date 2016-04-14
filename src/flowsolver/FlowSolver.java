@@ -43,6 +43,7 @@ public class FlowSolver {
 		
 		
 		for(FlowEntry flowToAdd:flowsToAdd){
+			flowToAdd.getFlowMod().computeLength();
 			flows.add(flowToAdd);
 		}
 		

@@ -16,7 +16,10 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 	}
 	
 	public FlowEntry remove(FlowEntry flowToRemove){
+		flowToRemove.getFlowMod().computeLength();
 		FlowEntry entry = this.get(flowToRemove.hashCode());
+		//System.out.println(flowToRemove.hashCode());
+		//System.out.println(entry.hashCode());
 		//System.out.println(entry.hashCode());
 		if(entry == null){
 			return null;
@@ -26,7 +29,7 @@ public class FlowEntryTable extends HashMap<Integer, FlowEntry>{
 			if(entry.getFlowRequest().size()==0){
 				entry.newSwitchSet(new ArrayList<OFSwitch>()); //update the switches on the flow entry with nothing causing all switches to be removed and all flows to be retracted
 				//System.out.println(entry.hashCode());
-				return this.remove(entry.hashCode());
+				return this.remove(flowToRemove.hashCode());
 			}
 			return entry;
 		}

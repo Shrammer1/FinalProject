@@ -1,11 +1,13 @@
 package topology;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import controller.Controller;
 import controller.OFSwitch;
+import utils.Tuple;
 
 public class TopologyMapper implements Runnable{
 	
@@ -18,6 +20,7 @@ public class TopologyMapper implements Runnable{
 	private HostTable hosts = new HostTable(this);
 	private LinkTable links = new LinkTable();
 	private Controller controller;
+	private ArrayList<Tuple> ipsToAge = new ArrayList<Tuple>();
 	
 	public TopologyMapper(String name,Controller controller) {
 		this.switches = controller.getSwitches();
@@ -33,6 +36,14 @@ public class TopologyMapper implements Runnable{
 		while(!(t.isInterrupted())){
 			try {
 				Thread.sleep(1000);
+				
+				Iterator<Tuple> i = ipsToAge.iterator();
+				while(i.hasNext()){
+					Tuple t = i.next();
+					hosts.ageIPMapping(t.ip, t.sw);
+					i.remove();
+				}
+				
 				
 				//System.out.println(hosts.toString());
 				
@@ -192,7 +203,8 @@ public class TopologyMapper implements Runnable{
 	}
 	
 	public void ageIP(int ip, OFSwitch ofSwitch) {
-		hosts.ageIPMapping(ip, ofSwitch);
+		//hosts.ageIPMapping(ip, ofSwitch);
+		ipsToAge.add(new Tuple(ip,ofSwitch));
 	}
 
 
