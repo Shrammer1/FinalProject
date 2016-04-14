@@ -31,7 +31,6 @@ public class LLDPMessage {
 	 */
 	public int length(){
 		
-		//TODO: add in the optional TLVs
 		
 		int retval = 0;
 		retval +=dstMac.length;

@@ -532,7 +532,6 @@ public class OFSwitch implements Runnable{
 	    					pkhl.addPacket(msg);
 	    					pkhl.wakeUp();
 	    				}
-	    				//TODO: come up with a way to let apps register and hear about PacketINs containing LLDP messages (should we even let this happen?)
 	    				for(Map.Entry<String,Registration> r: registrations.entrySet()){
     						r.getValue().addMsg(msg);
     					}

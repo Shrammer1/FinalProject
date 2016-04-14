@@ -70,6 +70,7 @@ public class FirewallApp implements CLIModule {
 		
 	}
 	
+	//Tests the usage of the Firewall
 	public void test() throws RemoteException {
 		// define two domains A and B
 		Domain domA = new Domain("TestDomain1");
@@ -87,10 +88,10 @@ public class FirewallApp implements CLIModule {
 		api.requestAddFlow(req);
 	}
 	
+	/*
+	 * This method is just to test the interactive CLI functionality
+	 */
 	public void testCLI() {
-		/*
-		 * This method is just to test the interactive CLI functionality
-		 */
 		try {
 			String appName = getApplicationContextName();
 			System.out.print(appName + "> ");
